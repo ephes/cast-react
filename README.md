@@ -123,6 +123,9 @@ the comment post URL (`comments-post-comment-ajax`).
 - The transcript page (`transcript.html`) and the feed page
   (`feed_detail.html`) fall back to django-cast's plain templates.
 - django-cast's styleguide (`/cast/styleguide/`) has no React version.
+- The plain page for pages without a blog shows no Django messages (for
+  example "Password changed"). Keep another theme as the site default if
+  account pages extend the site theme.
 - The interface texts are English only.
 
 ## Development
