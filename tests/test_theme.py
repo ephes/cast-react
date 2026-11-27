@@ -190,3 +190,28 @@ def test_facet_counts_api_shape(client, podcast):
     response = client.get(blog.facet_counts_api_url)
     assert response.status_code == 200
     assert {"date_facets", "category_facets", "tag_facets"} <= set(response.json()["facet_counts"])
+
+
+def test_example_media_view_answers_range_requests(rf, podcast):
+    from django.http import Http404
+
+    from example.media import serve_media
+
+    _blog, _episode, audio = podcast
+
+    def get(range_header=None, path=audio.mp3.name):
+        headers = {"Range": range_header} if range_header else {}
+        return serve_media(rf.get("/media/" + path, headers=headers), path)
+
+    whole = get()
+    assert whole.status_code == 200
+    assert whole["Accept-Ranges"] == "bytes"
+    content = b"".join(whole.streaming_content)
+    part = get("bytes=2-5")
+    assert part.status_code == 206
+    assert part.content == content[2:6]
+    assert part["Content-Range"] == f"bytes 2-5/{len(content)}"
+    assert get("bytes=-3").content == content[-3:]
+    assert get(f"bytes={len(content)}-").status_code == 416
+    with pytest.raises(Http404):
+        get(path="../settings.py")
