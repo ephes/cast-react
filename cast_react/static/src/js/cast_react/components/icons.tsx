@@ -143,10 +143,16 @@ export const MoonIcon = ({ size }: IconProps) => (
   </Icon>
 );
 
-export const AutoIcon = ({ size }: IconProps) => (
+export const MonitorIcon = ({ size }: IconProps) => (
   <Icon size={size}>
-    <circle cx="12" cy="12" r="8" />
-    <path d="M12 4v16a8 8 0 0 0 0-16z" fill="currentColor" stroke="none" />
+    <rect x="3" y="4" width="18" height="13" rx="2" />
+    <path d="M12 17v3m-4 0h8" />
+  </Icon>
+);
+
+export const CheckIcon = ({ size }: IconProps) => (
+  <Icon size={size}>
+    <path d="m5 12 4 4L19 6" />
   </Icon>
 );
 

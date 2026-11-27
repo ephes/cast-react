@@ -247,7 +247,7 @@ it("shows the labeled header button and configured footer follow links", async (
   expect(header.textContent).toBe("Subscribe");
   expect(header.getAttribute("href")).toBe("/show/feed/");
   expect(header.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
-  expect(header.nextElementSibling?.tagName).toBe("BUTTON");
+  expect(header.nextElementSibling?.querySelector("[data-appearance-trigger]")).not.toBeNull();
 
   const footer = view.querySelector('footer nav[aria-label="Follow"]')!;
   expect(footer.querySelector("a")?.getAttribute("href")).toBe("/show/feed/");
@@ -328,7 +328,7 @@ describe("post list", () => {
     const actions = nav.nextElementSibling!;
     expect(actions.className).toBe("cr-header__actions");
     expect(actions.querySelector('a[aria-label="Feeds"]')?.getAttribute("href")).toBe("/feed/");
-    expect(actions.querySelector("button")?.getAttribute("aria-label")).toContain("Change");
+    expect(actions.querySelector("[data-appearance-trigger]")?.getAttribute("aria-label")).toBe("Appearance: System");
   });
 
   it.each([

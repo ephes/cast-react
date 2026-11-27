@@ -1,0 +1,7 @@
+{# Apply the saved appearance before styles load. Keep the lookup in sync with colorScheme.ts. #}
+<script{% if csp_nonce is not None %} nonce="{{ csp_nonce }}"{% endif %}>
+  try {
+    const scheme = localStorage.getItem("cast-color-scheme") ?? localStorage.getItem("cast-react-color-scheme");
+    if (scheme === "light" || scheme === "dark") document.documentElement.dataset.colorScheme = scheme;
+  } catch {}
+</script>

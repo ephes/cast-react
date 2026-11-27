@@ -7,11 +7,13 @@ import pytest
 from cast import devdata
 from cast.models import Audio, Blog, ChapterMark, Episode
 from cast.models.theme import get_required_template_names, get_template_base_dir_choices
+from django import VERSION as DJANGO_VERSION
 from django.apps import apps
 from django.http import HttpResponse
 from django.template import Context, engines
 from django.template.loader import get_template, render_to_string
 from django.urls import include, path, reverse
+from django.utils import translation
 from wagtail.models import PageViewRestriction, Site
 
 import cast_react
@@ -53,6 +55,17 @@ def subscribe_json(html: str) -> dict:
     return json.loads(script[1])
 
 
+def assert_prepaint_appearance(html: str, nonce: str | None = None):
+    head = html.split("</head>", 1)[0]
+    assert '<meta name="color-scheme" content="light dark">' in head
+    script = re.search(r"(<script\b[^>]*>)[^<]+cast-color-scheme[^<]+</script>", head)
+    assert script is not None
+    assert script[1] == (f'<script nonce="{nonce}">' if nonce else "<script>")
+    assert 'localStorage.getItem("cast-color-scheme") ?? localStorage.getItem("cast-react-color-scheme")' in script[0]
+    assert "document.documentElement.dataset.colorScheme = scheme" in script[0]
+    assert not re.search(r'<style\b|rel="stylesheet"', head[: script.start()])
+
+
 def test_app_config():
     assert apps.get_app_config("cast_react").name == "cast_react"
     assert cast_react.__version__
@@ -72,6 +85,35 @@ def test_error_pages_render_without_context(name):
     html = render_to_string(f"cast/{THEME}/{name}")
     assert "<h1>" in html
     assert "cast-react-configuration" not in html
+    assert_prepaint_appearance(html)
+    assert ':root[data-color-scheme="light"] { color-scheme: light; }' in html
+    assert ':root[data-color-scheme="dark"] { color-scheme: dark; }' in html
+
+
+@pytest.mark.skipif(DJANGO_VERSION < (6, 0), reason="Django's CSP middleware requires Django 6.0+")
+def test_prepaint_appearance_uses_the_csp_nonce(rf, settings):
+    from django.middleware.csp import ContentSecurityPolicyMiddleware
+    from django.utils.csp import CSP
+
+    settings.SECURE_CSP = {"script-src": [CSP.SELF, CSP.NONCE]}
+    settings.TEMPLATES = [
+        {
+            **settings.TEMPLATES[0],
+            "OPTIONS": {"context_processors": ["django.template.context_processors.csp"]},
+        }
+    ]
+
+    def render_error(request):
+        return HttpResponse(render_to_string(f"cast/{THEME}/404.html", request=request), status=404)
+
+    middleware = ContentSecurityPolicyMiddleware(render_error)
+    response = middleware(rf.get("/missing/"))
+    nonce = re.fullmatch(r"script-src 'self' 'nonce-([^']+)'", response[CSP.HEADER_ENFORCE])
+    assert nonce is not None
+    assert_prepaint_appearance(response.content.decode(), nonce=nonce[1])
+
+    response = render_error(rf.get("/missing/"))
+    assert_prepaint_appearance(response.content.decode())
 
 
 def test_blog_index_configures_the_app(client, podcast):
@@ -90,6 +132,7 @@ def test_blog_index_configures_the_app(client, podcast):
     assert data["csrf-token"]
     assert int(data["pagination-page-size"]) > 0
     assert '<div id="app"></div>' in html
+    assert_prepaint_appearance(html)
     assert '<template id="cast-react-blog-description"><p>About the <b>show</b></p></template>' in html
     feed_page = reverse("cast:feed_detail", kwargs={"slug": blog.slug})
     assert data["feed-url"] == feed_page
@@ -113,6 +156,7 @@ def test_episode_page_configures_the_detail_route(client, podcast):
     assert 'rel="canonical"' in html
     assert 'property="og:audio"' in html
     assert subscribe_json(html)["isPodcast"] is True
+    assert_prepaint_appearance(html)
 
 
 @pytest.mark.parametrize("inherited", [False, True])
@@ -390,16 +434,36 @@ def rendered_page(response) -> str:
     assert 'class="cr-main cr-prose cr-page-content"' in html
     assert re.search(
         r'<div class="cr-header__controls">\s*<nav class="cr-header__nav"[^>]*>'
-        r'.*?</nav>\s*<div class="cr-header__actions">.*?<button[^>]*data-appearance',
+        r'.*?</nav>\s*<div class="cr-header__actions">.*?<button[^>]*data-appearance-trigger',
         html,
         re.DOTALL,
     )
+    assert_prepaint_appearance(html)
     assert re.search(r'src="/static/cast_react/page-[\w-]+\.js"', html)
     assert re.search(r'href="/static/cast_react/[\w-]+\.css"', html)
     assert 'id="app"' not in html
     assert "cast-react-configuration" not in html
     assert "cast_react/main-" not in html
     return html
+
+
+@pytest.mark.parametrize("language", ["en", "fr"])
+def test_django_appearance_menu(language):
+    with translation.override(language):
+        html = render_to_string(f"cast/{THEME}/_appearance_menu.html")
+    assert 'class="cr-appearance" data-appearance' in html
+    assert 'aria-label="Appearance: System" title="Appearance: System"' in html
+    assert 'aria-haspopup="menu" aria-expanded="false" aria-controls="cr-appearance-menu" hidden' in html
+    assert 'class="cr-appearance__menu" id="cr-appearance-menu" role="menu" aria-label="Appearance" hidden' in html
+    assert re.findall(r'data-scheme-icon="([^"]+)"', html) == ["light", "dark", "system"]
+    assert html.count('<rect x="3" y="4" width="18" height="13" rx="2" />') == 2
+    assert re.findall(
+        r'data-scheme-choice="([^"]+)" data-appearance-label="Appearance: (\w+)"\s+'
+        r'role="menuitemradio" aria-checked="(true|false)" tabindex="-1"',
+        html,
+    ) == [("light", "Light", "false"), ("dark", "Dark", "false"), ("system", "System", "true")]
+    assert re.findall(r"<span>([^<]+)</span>", html) == ["Light", "Dark", "System"]
+    assert html.count('class="cr-appearance__check"') == 3
 
 
 def test_feed_detail_uses_the_page_layout(client, podcast, settings):

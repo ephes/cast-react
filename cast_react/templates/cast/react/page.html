@@ -21,13 +21,7 @@
         <meta name="description" content="{% firstof blog.search_description blog.title %}">
       {% endblock description %}
     {% endblock meta %}
-    {# Apply the stored choice before styles load. The toggle uses colorScheme.ts. #}
-    <script>
-      try {
-        const scheme = localStorage.getItem("cast-react-color-scheme");
-        if (scheme === "light" || scheme === "dark") document.documentElement.dataset.colorScheme = scheme;
-      } catch {}
-    </script>
+    {% include "./_appearance_head.html" %}
     {% block feeds %}
       {% if cr_subscribe.blogRssUrl %}
         <link rel="alternate" type="application/rss+xml" title="{{ blog.title }}" href="{{ cr_subscribe.blogRssUrl }}">

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.10
+
+- The header Appearance menu offers Light, Dark and System on React and
+  Django-rendered pages. It shows the current choice and supports keyboard and
+  touch navigation.
+- React and Vue share saved appearance on the same origin. Changes sync
+  across tabs running the theme bundle. Error pages apply the saved choice on
+  their next load. Selecting any option in the React theme clears legacy
+  settings from both themes.
+- The inline appearance script uses Django's CSP nonce when available, even
+  when it is the first script to use the nonce.
+
 ## 0.0.9
 
 - The Month, Order, and Site theme menus open on solid backgrounds that match

@@ -1,4 +1,4 @@
-{# Error pages are plain HTML: they must render without a blog, the API or JavaScript. #}
+{# Error pages render without a blog, the API or the theme bundle. #}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,7 +7,10 @@
     <meta name="color-scheme" content="light dark">
     <meta name="robots" content="noindex">
     <title>{% block title %}Something went wrong{% endblock title %}</title>
+    {% include "./_appearance_head.html" %}
     <style>
+      :root[data-color-scheme="light"] { color-scheme: light; }
+      :root[data-color-scheme="dark"] { color-scheme: dark; }
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1.5rem;
              font: 1.0625rem/1.6 system-ui, sans-serif; background: Canvas; color: CanvasText; }
       main { max-width: 34rem; }

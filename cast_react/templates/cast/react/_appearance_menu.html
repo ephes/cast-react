@@ -1,0 +1,14 @@
+<div class="cr-appearance" data-appearance>
+  <button type="button" class="cr-icon-button" data-appearance-trigger
+          aria-label="Appearance: System" title="Appearance: System"
+          aria-haspopup="menu" aria-expanded="false" aria-controls="cr-appearance-menu" hidden>
+    <span data-scheme-icon="light" hidden>{% include "./_appearance_icon.html" with icon="light" only %}</span>
+    <span data-scheme-icon="dark" hidden>{% include "./_appearance_icon.html" with icon="dark" only %}</span>
+    <span data-scheme-icon="system">{% include "./_appearance_icon.html" with icon="system" only %}</span>
+  </button>
+  <div class="cr-appearance__menu" id="cr-appearance-menu" role="menu" aria-label="Appearance" hidden>
+    {% include "./_appearance_option.html" with scheme="light" label="Light" appearance_label="Appearance: Light" only %}
+    {% include "./_appearance_option.html" with scheme="dark" label="Dark" appearance_label="Appearance: Dark" only %}
+    {% include "./_appearance_option.html" with scheme="system" label="System" appearance_label="Appearance: System" only %}
+  </div>
+</div>

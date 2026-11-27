@@ -47,7 +47,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.9"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.10"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player
@@ -96,6 +96,24 @@ Set the theme to `react` in the Wagtail admin, for the complete site
 
 That's it. The blog index and its posts are now rendered by the React theme.
 
+## Appearance
+
+Open **Appearance** at the end of the header and choose **Light**, **Dark** or
+**System**. The header icon shows the current choice. **System** is the
+default and follows your device's appearance as it changes.
+
+Use the arrow keys to move through the menu, Enter or Space to choose, and
+Escape to close it. The menu works in the React app and on Django-rendered
+pages. Pages apply the saved choice before loading styles. Light and Dark
+are shared with cast-vue on the same origin, and appearance changes sync
+across open tabs running the theme bundle. Error pages pick up the saved choice
+on their next load. Choosing any option in the React theme clears both themes'
+legacy settings. Choosing System also clears the shared setting.
+
+With Django 6's CSP middleware and `django.template.context_processors.csp`,
+the inline appearance script renders the request's nonce. Add `CSP.NONCE` to
+`script-src` in `SECURE_CSP` to include the same nonce in the response policy.
+
 ## Subscription and follow links
 
 Use django-cast's `CAST_FOLLOW_LINKS` to set `apple_podcasts`, `spotify`, and
@@ -141,7 +159,8 @@ is how django-cast discovers themes.
   layout with its `{% block content %}`. The `title` block takes plain text,
   and `css` and `javascript` can add site assets. The theme's Vite entry
   loads independently of those blocks.
-- The error pages (`400.html` … `500.html`) are plain HTML without JavaScript.
+- The error pages (`400.html` … `500.html`) use the saved appearance and
+  render without loading the theme bundle.
 
 API endpoints used: the Wagtail pages API (`cast:api:wagtail:pages:listing`,
 with `use_post_filter=true` and `render_for_feed=false`), facet counts

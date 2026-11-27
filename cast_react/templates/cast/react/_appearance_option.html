@@ -1,0 +1,7 @@
+<button type="button" class="cr-appearance__option"
+        data-scheme-choice="{{ scheme }}" data-appearance-label="{{ appearance_label }}"
+        role="menuitemradio" aria-checked="{% if scheme == 'system' %}true{% else %}false{% endif %}" tabindex="-1">
+  {% include "./_appearance_icon.html" with icon=scheme only %}
+  <span>{{ label }}</span>
+  <span class="cr-appearance__check">{% include "./_appearance_icon.html" with icon="check" size=16 only %}</span>
+</button>

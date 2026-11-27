@@ -1,51 +1,88 @@
-// Light and dark appearance. Without a choice the page follows the system
-// setting (CSS `prefers-color-scheme`); an explicit choice is remembered.
+// Without an explicit choice, CSS follows the device's color scheme live.
 
-export type ColorScheme = "auto" | "light" | "dark";
+export const COLOR_SCHEMES = ["light", "dark", "system"] as const;
+export type ColorScheme = (typeof COLOR_SCHEMES)[number];
 
-const STORAGE_KEY = "cast-react-color-scheme";
-const SCHEME_ORDER: ColorScheme[] = ["auto", "light", "dark"];
-
-export const SCHEME_LABELS: Record<ColorScheme, string> = {
-  auto: "Appearance: same as your device",
-  light: "Appearance: light",
-  dark: "Appearance: dark",
-};
-
-export function nextColorScheme(scheme: ColorScheme): ColorScheme {
-  return SCHEME_ORDER[(SCHEME_ORDER.indexOf(scheme) + 1) % SCHEME_ORDER.length];
-}
+const STORAGE_KEY = "cast-color-scheme";
+const LEGACY_KEY = "cast-react-color-scheme";
+const VUE_LEGACY_KEY = "cast-vue:color-scheme";
+const subscribers = new Set<(scheme: ColorScheme) => void>();
+let pageChoice: ColorScheme | undefined;
 
 export function readColorScheme(): ColorScheme {
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored === "light" || stored === "dark" ? stored : "auto";
-  } catch {
-    return "auto";
+  if (pageChoice) {
+    return pageChoice;
   }
+  let stored: string | null | undefined;
+  try {
+    stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_KEY);
+  } catch {
+    stored = document.documentElement.dataset.colorScheme;
+  }
+  return stored === "light" || stored === "dark" ? stored : "system";
 }
 
 export function applyColorScheme(scheme: ColorScheme): void {
-  if (scheme === "auto") {
+  if (scheme === "system") {
     delete document.documentElement.dataset.colorScheme;
   } else {
     document.documentElement.dataset.colorScheme = scheme;
   }
 }
 
-export function storeColorScheme(scheme: ColorScheme): void {
+function publishColorScheme(scheme: ColorScheme): void {
   applyColorScheme(scheme);
-  try {
-    if (scheme === "auto") {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } else {
-      window.localStorage.setItem(STORAGE_KEY, scheme);
-    }
-  } catch {
-    // Private browsing or blocked storage: the choice lasts for this page only.
+  for (const update of subscribers) {
+    update(scheme);
   }
 }
 
-export function systemPrefersDark(): boolean {
-  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+export function storeColorScheme(scheme: ColorScheme): void {
+  try {
+    if (scheme !== "system") {
+      localStorage.setItem(STORAGE_KEY, scheme);
+    }
+    localStorage.removeItem(LEGACY_KEY);
+    localStorage.removeItem(VUE_LEGACY_KEY);
+    if (scheme === "system") {
+      // Clear both fallbacks before other tabs can see the shared key disappear.
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    pageChoice = undefined;
+  } catch {
+    // The choice lasts for this page if storage is blocked.
+    pageChoice = scheme;
+  }
+  publishColorScheme(scheme);
+}
+
+function syncColorScheme(event: StorageEvent): void {
+  if (event.key !== null && event.key !== STORAGE_KEY && event.key !== LEGACY_KEY) {
+    return;
+  }
+  if (event.storageArea) {
+    try {
+      if (event.storageArea !== localStorage) {
+        return;
+      }
+    } catch {
+      return;
+    }
+  }
+  pageChoice = undefined;
+  publishColorScheme(readColorScheme());
+}
+
+export function subscribeColorScheme(update: (scheme: ColorScheme) => void): () => void {
+  const scheme = readColorScheme();
+  applyColorScheme(scheme);
+  update(scheme);
+  subscribers.add(update);
+  window.addEventListener("storage", syncColorScheme);
+  return () => {
+    subscribers.delete(update);
+    if (subscribers.size === 0) {
+      window.removeEventListener("storage", syncColorScheme);
+    }
+  };
 }

@@ -1,34 +1,74 @@
 // Site header and footer: blog title, navigation, appearance and theme choice.
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { fetchJson } from "../api";
-import { nextColorScheme, readColorScheme, SCHEME_LABELS, storeColorScheme } from "../colorScheme";
+import { initAppearanceMenu } from "../appearanceMenu";
+import { COLOR_SCHEMES } from "../colorScheme";
 import type { Config } from "../config";
 import { Link } from "../navigation";
 import type { Theme } from "../types";
-import { AutoIcon, FeedIcon, MoonIcon, SunIcon } from "./icons";
+import { CheckIcon, FeedIcon, MonitorIcon, MoonIcon, SunIcon } from "./icons";
 
 const THEME_SLUG = "react";
 // The header has room for a handful of links; a site with more pages than that
 // needs its own navigation.
 const MAX_NAVIGATION_LINKS = 5;
+
+const APPEARANCE_OPTIONS = {
+  light: { label: "Light", Icon: SunIcon },
+  dark: { label: "Dark", Icon: MoonIcon },
+  system: { label: "System", Icon: MonitorIcon },
+};
+
 function ColorSchemeButton() {
-  const [scheme, setScheme] = useState(readColorScheme);
-  const change = () => {
-    const next = nextColorScheme(scheme);
-    storeColorScheme(next);
-    setScheme(next);
-  };
+  const root = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  useLayoutEffect(() => initAppearanceMenu(root.current!), []);
+
   return (
-    <button
-      type="button"
-      className="cr-icon-button"
-      onClick={change}
-      aria-label={`${SCHEME_LABELS[scheme]}. Change`}
-      title={SCHEME_LABELS[scheme]}
-    >
-      {scheme === "auto" ? <AutoIcon /> : scheme === "light" ? <SunIcon /> : <MoonIcon />}
-    </button>
+    <div className="cr-appearance" data-appearance="" ref={root}>
+      <button
+        type="button"
+        className="cr-icon-button"
+        data-appearance-trigger=""
+        aria-label="Appearance: System"
+        title="Appearance: System"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        aria-controls={menuId}
+        hidden
+      >
+        {COLOR_SCHEMES.map((scheme) => {
+          const { Icon } = APPEARANCE_OPTIONS[scheme];
+          return (
+            <span key={scheme} data-scheme-icon={scheme} hidden={scheme !== "system"}>
+              <Icon />
+            </span>
+          );
+        })}
+      </button>
+      <div className="cr-appearance__menu" id={menuId} role="menu" aria-label="Appearance" hidden>
+        {COLOR_SCHEMES.map((scheme) => {
+          const { label, Icon } = APPEARANCE_OPTIONS[scheme];
+          return (
+            <button
+              key={scheme}
+              type="button"
+              className="cr-appearance__option"
+              data-scheme-choice={scheme}
+              data-appearance-label={`Appearance: ${label}`}
+              role="menuitemradio"
+              aria-checked={scheme === "system"}
+              tabIndex={-1}
+            >
+              <Icon />
+              <span>{label}</span>
+              <span className="cr-appearance__check"><CheckIcon size={16} /></span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
