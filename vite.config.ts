@@ -28,6 +28,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(source, "js/cast_react/main.tsx"),
+        page: resolve(source, "js/cast_react/page.ts"),
       },
     },
   },

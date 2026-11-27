@@ -1,5 +1,20 @@
-<form action='{% url "cast:select-theme" %}' method="post">
-  {% csrf_token %}
-  {{ theme_form.as_p }}
-  <button type="submit">Use this theme</button>
-</form>
+{% load i18n %}
+<div class="cast-select-theme">
+  <h2>{% translate "Select Theme" %}</h2>
+  {{ theme_form.errors }}
+  <ul class="list-unstyled">
+    {% for theme_slug, theme_name in template_base_dir_choices %}
+      <li>
+        <form action="{% url 'cast:select-theme' %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="template_base_dir" value="{{ theme_slug }}">
+          <input type="hidden" name="next" value="{{ next_url }}">
+          <button type="submit" class="btn btn-primary"{% if theme_slug == template_base_dir %} aria-current="true"{% endif %}>
+            {{ theme_name }}
+            {% if theme_slug == template_base_dir %}<span class="cr-current-theme">{% translate "Current theme" %}</span>{% endif %}
+          </button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+</div>

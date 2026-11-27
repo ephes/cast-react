@@ -1,0 +1,47 @@
+{% extends "./page.html" %}
+{% load i18n %}
+
+{% block title %}{% if is_podcast %}{% translate "Subscribe" %}{% else %}{% translate "Feeds" %}{% endif %} – {{ blog.title }}{% endblock title %}
+
+{% block content %}
+  <h1>{% if is_podcast %}{% translate "Subscribe" %}{% else %}{% translate "Feeds" %}{% endif %} – {{ blog.title }}</h1>
+
+  {% if is_podcast %}
+    {% if apple_podcasts_url or spotify_url or youtube_url %}
+      <section class="cr-feed-card">
+        <h2>{% translate "Where to listen" %}</h2>
+        <ul>
+          {% if apple_podcasts_url %}<li><a href="{{ apple_podcasts_url }}">Apple Podcasts</a></li>{% endif %}
+          {% if spotify_url %}<li><a href="{{ spotify_url }}">Spotify</a></li>{% endif %}
+          {% if youtube_url %}<li><a href="{{ youtube_url }}">YouTube</a></li>{% endif %}
+        </ul>
+      </section>
+    {% endif %}
+    {% block podlove_subscribe_button %}{% endblock podlove_subscribe_button %}
+  {% endif %}
+
+  <section class="cr-feed-card">
+    <h2>{% translate "Feeds" %}</h2>
+    <ul>
+      <li>{% include "./_feed_link.html" with url=blog_feed_url label="RSS" only %}</li>
+      <li>{% include "./_feed_link.html" with url=blog_atom_feed_url label="Atom" only %}</li>
+    </ul>
+  </section>
+
+  {% if podcast_feeds %}
+    <section class="cr-feed-card">
+      <h2>{% translate "Podcast Feeds" %}</h2>
+      <dl class="cr-podcast-feeds">
+        {% for feed in podcast_feeds %}
+          <div>
+            <dt>{{ feed.format_label }}</dt>
+            <dd>
+              {% include "./_feed_link.html" with url=feed.rss_url label="RSS" only %}
+              {% include "./_feed_link.html" with url=feed.atom_url label="Atom" only %}
+            </dd>
+          </div>
+        {% endfor %}
+      </dl>
+    </section>
+  {% endif %}
+{% endblock content %}

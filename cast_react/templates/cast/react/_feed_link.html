@@ -1,0 +1,7 @@
+{% load i18n %}
+<span class="cr-feed-link">
+  <a href="{{ url }}">{{ label }}</a>
+  <button type="button" class="cr-button cr-button--quiet" data-copy-feed hidden
+          aria-label="{% blocktranslate %}Copy {{ label }} link{% endblocktranslate %}"
+          data-copied="{% translate 'Copied' %}" data-copy-failed="{% translate 'Could not copy' %}">{% translate "Copy" %}</button>
+</span>

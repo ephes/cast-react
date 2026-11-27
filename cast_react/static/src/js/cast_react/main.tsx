@@ -1,4 +1,5 @@
 import "vite/modulepreload-polyfill";
+import "../../css/cast_react/shared.css";
 import "../../css/cast_react/styles.css";
 import "../../css/cast_react/pygments.css";
 

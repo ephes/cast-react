@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchJson } from "../api";
-import { type ColorScheme, readColorScheme, storeColorScheme } from "../colorScheme";
+import { nextColorScheme, readColorScheme, SCHEME_LABELS, storeColorScheme } from "../colorScheme";
 import type { Config } from "../config";
 import { Link } from "../navigation";
 import type { Theme } from "../types";
@@ -12,17 +12,10 @@ const THEME_SLUG = "react";
 // The header has room for a handful of links; a site with more pages than that
 // needs its own navigation.
 const MAX_NAVIGATION_LINKS = 5;
-const SCHEME_ORDER: ColorScheme[] = ["auto", "light", "dark"];
-const SCHEME_LABELS: Record<ColorScheme, string> = {
-  auto: "Appearance: same as your device",
-  light: "Appearance: light",
-  dark: "Appearance: dark",
-};
-
 function ColorSchemeButton() {
-  const [scheme, setScheme] = useState<ColorScheme>(readColorScheme);
-  const next = SCHEME_ORDER[(SCHEME_ORDER.indexOf(scheme) + 1) % SCHEME_ORDER.length];
+  const [scheme, setScheme] = useState(readColorScheme);
   const change = () => {
+    const next = nextColorScheme(scheme);
     storeColorScheme(next);
     setScheme(next);
   };

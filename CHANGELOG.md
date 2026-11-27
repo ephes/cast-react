@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.0.4
+
+- Categories and tags are ordered by post count and show the 12 most common
+  choices to start. The expansion toggle appears only when it can reveal more
+  choices. If filtering removes a focused toggle, focus returns to search.
+  Selected filters stay visible, and clearing a filter keeps focus on its
+  button. Months are grouped newest first by Gregorian year, with
+  localized month names and a fallback for invalid page languages.
+- The filter sidebar scrolls with the page. Month, date range and sort fields
+  share the same styling in light and dark mode.
+- Feed and transcript pages, the theme chooser and other Django-rendered
+  pages use the React theme's header, styles and saved appearance choice.
+  The theme assets stay loaded when a page overrides `css` or `javascript`.
+- The example podcast includes a multi-year archive with about 40 tags for
+  trying the filters.
 
 ## 0.0.3
 

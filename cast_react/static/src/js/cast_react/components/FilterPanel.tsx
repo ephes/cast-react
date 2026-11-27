@@ -1,49 +1,59 @@
 // Search and filters of the post list. Every change becomes a new address
 // (`?search=…&tag_facets=…`), so a filtered list can be bookmarked and shared.
 
-import { useEffect, useId, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { FormEvent, RefCallback } from "react";
 import { FILTER_KEYS, type Facet, type FacetCounts, type FilterKey, type Filters } from "../types";
 import { FilterIcon, SearchIcon } from "./icons";
 
 const SEARCH_DELAY_MS = 400;
+const FACET_LIMIT = 12;
+const MONTH_SLUG = /^\d{4}-(?:0[1-9]|1[0-2])$/;
 
-function monthName(slug: string): string {
-  const match = /^(\d{4})-(\d{2})$/.exec(slug);
-  if (!match) {
-    return slug;
+function includeSelected(items: Facet[], selected: string): Facet[] {
+  if (selected && !items.some((facet) => facet.slug === selected)) {
+    return [...items, { slug: selected, name: selected, count: 0 }];
   }
-  const date = new Date(Number(match[1]), Number(match[2]) - 1, 1);
-  return new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(date);
+  return items;
 }
 
 function FacetGroup({
   title,
+  noun,
   facets,
   selected,
-  label = (facet) => facet.name,
   onSelect,
+  toggleRef,
 }: {
   title: string;
+  noun: string;
   facets: Facet[] | undefined;
   selected: string;
-  label?: (facet: Facet) => string;
   onSelect: (slug: string) => void;
+  toggleRef: RefCallback<HTMLButtonElement>;
 }) {
   const headingId = useId();
-  // Keep a selected value visible even when the current result no longer lists it.
-  const items = [...(facets ?? [])];
-  if (selected && !items.some((facet) => facet.slug === selected)) {
-    items.unshift({ slug: selected, name: selected, count: 0 });
-  }
-  if (items.length === 0) {
+  const listId = useId();
+  const [expanded, setExpanded] = useState(false);
+  const [focused, setFocused] = useState<Facet | null>(null);
+  const ranked = [...(facets ?? [])].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  const selectedItems = includeSelected(ranked, selected);
+  // Keep the focused button mounted if clearing a filter hides it or drops it from the counts.
+  const items = focused && !selectedItems.some((facet) => facet.slug === focused.slug)
+    ? [...selectedItems, { ...focused, count: 0 }]
+    : selectedItems;
+  if (!items.length) {
     return null;
   }
+  const collapsed = items.filter(
+    (facet, index) => index < FACET_LIMIT || facet.slug === selected || facet.slug === focused?.slug,
+  );
+
   return (
     <div className="cr-facets">
       <h3 id={headingId}>{title}</h3>
-      <ul aria-labelledby={headingId}>
-        {items.map((facet) => {
+      <ul id={listId} aria-labelledby={headingId}>
+        {(expanded ? items : collapsed).map((facet) => {
           const active = facet.slug === selected;
           return (
             <li key={facet.slug}>
@@ -51,9 +61,11 @@ function FacetGroup({
                 type="button"
                 className="cr-facet"
                 aria-pressed={active}
+                onFocus={() => setFocused(facet)}
+                onBlur={() => setFocused(null)}
                 onClick={() => onSelect(facet.slug)}
               >
-                <span>{label(facet)}</span>
+                <span>{facet.name}</span>
                 <span className="cr-facet__count" aria-label={`${facet.count} posts`}>
                   {facet.count}
                 </span>
@@ -62,7 +74,79 @@ function FacetGroup({
           );
         })}
       </ul>
+      {collapsed.length < items.length && (
+        <button
+          ref={toggleRef}
+          type="button"
+          className="cr-button cr-button--quiet cr-facets__toggle"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "Show fewer" : `Show all ${ranked.length} ${noun}`}
+        </button>
+      )}
     </div>
+  );
+}
+
+function monthFormatter(): Intl.DateTimeFormat {
+  const locale = document.documentElement.lang.split("@", 1)[0].trim().replaceAll("_", "-");
+  const options: Intl.DateTimeFormatOptions = {
+    month: "long",
+    year: "numeric",
+    calendar: "gregory",
+    timeZone: "UTC",
+  };
+  try {
+    return new Intl.DateTimeFormat(locale || navigator.language, options);
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    return new Intl.DateTimeFormat(undefined, options);
+  }
+}
+
+function MonthSelect({
+  facets,
+  selected,
+  onSelect,
+}: {
+  facets: Facet[] | undefined;
+  selected: string;
+  onSelect: (slug: string) => void;
+}) {
+  const id = useId();
+  const format = monthFormatter();
+  const months = includeSelected(facets ?? [], selected).filter((facet) => MONTH_SLUG.test(facet.slug));
+  months.sort((a, b) => b.slug.localeCompare(a.slug));
+  const byYear = new Map<string, Facet[]>();
+  for (const month of months) {
+    const year = month.slug.slice(0, 4);
+    const group = byYear.get(year);
+    if (group) {
+      group.push(month);
+    } else {
+      byYear.set(year, [month]);
+    }
+  }
+
+  return (
+    <label className="cr-field" htmlFor={id}>
+      <span>Month</span>
+      <select id={id} value={selected} onChange={(event) => onSelect(event.target.value)}>
+        <option value="">Any month</option>
+        {selected && !MONTH_SLUG.test(selected) && <option value={selected}>{selected}</option>}
+        {Array.from(byYear, ([year, group]) => (
+          <optgroup key={year} label={year}>
+            {group.map(({ slug, count }) => (
+              <option key={slug} value={slug}>
+                {format.format(new Date(`${slug}-01T00:00:00Z`))} ({count})
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -78,6 +162,16 @@ export function FilterPanel({
 }) {
   const [search, setSearch] = useState(filters.search ?? "");
   const [open, setOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const facetToggleRef = useCallback<RefCallback<HTMLButtonElement>>((button) => {
+    if (!button) return;
+    return () => {
+      // A results update can remove the toggle or the entire group while it has focus.
+      if (button.ownerDocument.activeElement === button) {
+        searchInput.current?.focus();
+      }
+    };
+  }, []);
   const timer = useRef<number | undefined>(undefined);
   const latest = useRef({ filters, onChange });
   latest.current = { filters, onChange };
@@ -147,6 +241,7 @@ export function FilterPanel({
           <SearchIcon size={18} />
           <span className="cr-visually-hidden">Search posts</span>
           <input
+            ref={searchInput}
             id={`${id}-search`}
             type="search"
             value={search}
@@ -168,22 +263,24 @@ export function FilterPanel({
       <div id={`${id}-more`} className="cr-filters__more" data-open={open || undefined}>
         <FacetGroup
           title="Categories"
+          noun="categories"
           facets={facetCounts?.category_facets}
           selected={filters.category_facets ?? ""}
           onSelect={(slug) => toggle("category_facets", slug)}
+          toggleRef={facetToggleRef}
         />
         <FacetGroup
           title="Tags"
+          noun="tags"
           facets={facetCounts?.tag_facets}
           selected={filters.tag_facets ?? ""}
           onSelect={(slug) => toggle("tag_facets", slug)}
+          toggleRef={facetToggleRef}
         />
-        <FacetGroup
-          title="Months"
+        <MonthSelect
           facets={facetCounts?.date_facets}
           selected={filters.date_facets ?? ""}
-          label={(facet) => monthName(facet.slug)}
-          onSelect={(slug) => toggle("date_facets", slug)}
+          onSelect={(slug) => set("date_facets", slug)}
         />
         <fieldset className="cr-filters__dates">
           <legend>Published</legend>

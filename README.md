@@ -1,14 +1,19 @@
 # React Theme for Django-Cast
 
 `cast-react` is a theme for [`django-cast`](https://github.com/ephes/django-cast)
-whose pages are a small React application. Django serves a page shell and the
-django-cast API; React renders the post list and the posts in the browser.
+with a small React application for the post list and posts. Django serves the
+page shell and the django-cast API, and renders the feed and transcript pages.
 It is the React counterpart of [`cast-vue`](https://github.com/ephes/cast-vue).
 
 What you get:
 
 - Post list with search, category, tag and month filters, a date range, sort
   order and paging. Filters live in the address (`?search=…&tag_facets=…`).
+  Categories and tags start with the 12 most common choices and offer an
+  expansion toggle when more choices are available. The focused choice stays
+  visible when a filter is cleared. The month menu groups by
+  Gregorian year and uses the page language for month names, with a browser
+  default fallback for invalid language codes.
 - Post and episode pages with comments (including replies) and a lightbox for
   galleries.
 - An audio player made for this theme: the seek bar is divided into chapters,
@@ -25,7 +30,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.3"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.4"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player
@@ -94,10 +99,17 @@ is how django-cast discovers themes.
   with either value of `CAST_AUDIO_PLAYER`.
 - `gallery.html` renders plain links to the large pictures, which the app
   opens in a lightbox.
-- The error pages (`400.html` … `500.html`) are plain HTML without JavaScript.
+- `page.html` provides the header, prose layout and a small `page.ts` Vite
+  entry for Django-rendered pages. It shares styles and the saved appearance
+  choice with the app. `feed_detail.html` lists listening services and feeds,
+  `transcript.html` renders the full transcript, and `select_theme.html`
+  renders the theme chooser partial for htmx.
 - A page that extends `cast/react/base.html` without a `blog` in its context
-  (django-cast's theme chooser page, a site's own pages such as an imprint,
-  account pages) gets a plain page with its `{% block content %}` and no app.
+  (django-cast's theme chooser, an imprint or an account page) uses this
+  layout with its `{% block content %}`. The `title` block takes plain text,
+  and `css` and `javascript` can add site assets. The theme's Vite entry
+  loads independently of those blocks.
+- The error pages (`400.html` … `500.html`) are plain HTML without JavaScript.
 
 API endpoints used: the Wagtail pages API (`cast:api:wagtail:pages:listing`,
 with `use_post_filter=true` and `render_for_feed=false`), facet counts
@@ -120,10 +132,8 @@ the comment post URL (`comments-post-comment-ajax`).
   no comments. For an episode that has never been saved, the player has no
   transcript yet.
 - Addresses directly below the blog (`<blog>/<slug>/`) are treated as posts.
-- The transcript page (`transcript.html`) and the feed page
-  (`feed_detail.html`) fall back to django-cast's plain templates.
 - django-cast's styleguide (`/cast/styleguide/`) has no React version.
-- The plain page for pages without a blog shows no Django messages (for
+- The page layout does not display Django messages (for
   example "Password changed"). Keep another theme as the site default if
   account pages extend the site theme.
 - The interface texts are English only.
@@ -171,9 +181,9 @@ just test           # pytest
 just js-build
 ```
 
-This writes `main-*.js`, `main-*.css` and `manifest.json` to
-`cast_react/static/cast_react/`. Commit those files with the source change, so
-that the package and `collectstatic` contain the current bundle.
+This writes the `main` and `page` entries, shared assets and `manifest.json`
+to `cast_react/static/cast_react/`. Commit those files with the source change,
+so that the package and `collectstatic` contain the current bundle.
 
 ### Dependencies
 

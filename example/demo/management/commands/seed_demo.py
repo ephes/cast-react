@@ -28,6 +28,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from django.utils import timezone
 from django_comments import get_model as get_comment_model
 from PIL import Image as PILImage
@@ -75,7 +76,7 @@ EPISODES = [
     (
         "Transcripts are an interface",
         "Search, quotes and accessibility: what a good transcript makes possible.",
-        "accessibility",
+        "web",
         ["transcripts", "search"],
     ),
     (
@@ -93,7 +94,7 @@ EPISODES = [
     (
         "Dark mode is a contrast problem",
         "Designing two themes without doubling the work.",
-        "accessibility",
+        "web",
         ["design", "color"],
     ),
     (
@@ -156,6 +157,28 @@ POSTS = [
     ("Studio notes: the new desk", "We rebuilt the recording corner. A few pictures before it gets messy again."),
     ("Meetup recap in pictures", "Thank you to everyone who came by. Here is what the evening looked like."),
 ]
+
+ARCHIVE_TOPICS = [
+    ("Room tone", "audio"),
+    ("Cache headers", "web"),
+    ("Query plans", "backend"),
+    ("Noise floors", "audio"),
+    ("Alt text", "web"),
+    ("Backup restores", "backend"),
+    ("Headphone mixes", "audio"),
+    ("Reader mode", "web"),
+    ("Connection pools", "backend"),
+    ("Field recording", "audio"),
+    ("Keyboard focus", "web"),
+    ("Job retries", "backend"),
+    ("Voice isolation", "audio"),
+    ("Responsive images", "web"),
+    ("Request tracing", "backend"),
+    ("Remote interviews", "audio"),
+    ("Content security", "web"),
+    ("Data exports", "backend"),
+]
+ARCHIVE_POSTS = 48
 
 PALETTES = [
     ((38, 70, 120), (214, 166, 60)),
@@ -274,7 +297,7 @@ class Command(BaseCommand):
         TemplateBaseDirectory.objects.update_or_create(site=site, defaults={"name": "react"})
 
         categories = {}
-        for name in ("Audio", "Web", "Backend", "Accessibility"):
+        for name in ("Audio", "Web", "Backend"):
             categories[name.lower()], _ = PostCategory.objects.get_or_create(
                 slug=name.lower(), defaults={"name": name}
             )
@@ -378,7 +401,38 @@ class Command(BaseCommand):
             post.save()
             prepare_post_media(post)
 
-        self.stdout.write(self.style.SUCCESS(f"Seeded {total} episodes and {len(POSTS)} posts at {podcast.url}"))
+        self._archive(podcast, owner, categories, now, rng)
+        self.stdout.write(
+            self.style.SUCCESS(f"Seeded {total} episodes and {len(POSTS) + ARCHIVE_POSTS} posts at {podcast.url}")
+        )
+
+    @transaction.atomic
+    def _archive(self, podcast: Podcast, owner, categories: dict, now: dt.datetime, rng: random.Random) -> None:
+        """Add one inexpensive text post per month, with a few much more common tags."""
+        notes = ("first notes", "what changed", "what held up")
+        for index in range(ARCHIVE_POSTS):
+            topic_index = index % len(ARCHIVE_TOPICS)
+            topic, category = ARCHIVE_TOPICS[topic_index]
+            note = notes[index // len(ARCHIVE_TOPICS)]
+            year, month = divmod(now.year * 12 + now.month - 1 - (index + 7), 12)
+            teaser = rng.choice(SENTENCES)
+            body = [{"type": "overview", "value": [{"type": "paragraph", "value": f"<p>{teaser}</p>"}]}]
+            post = Post(
+                title=f"{topic}: {note}",
+                slug=f"archive-{year}-{month + 1:02d}",
+                owner=owner,
+                visible_date=now.replace(year=year, month=month + 1, day=12),
+                search_description=teaser,
+                body=json.dumps(body),
+            )
+            podcast.add_child(instance=post)
+            post.categories.add(categories[category])
+            tags = [topic]
+            for tag, interval in (("behind-the-scenes", 1), ("open-web", 2), ("performance", 4), ("editing", 8)):
+                if index % interval == 0:
+                    tags.append(tag)
+            post.tags.add(*tags)
+            post.save()
 
     def _image(self, index: int, owner) -> Image:
         image = Image(title=f"Demo picture {index + 1}", uploaded_by_user=owner)

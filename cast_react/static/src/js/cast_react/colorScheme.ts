@@ -4,6 +4,17 @@
 export type ColorScheme = "auto" | "light" | "dark";
 
 const STORAGE_KEY = "cast-react-color-scheme";
+const SCHEME_ORDER: ColorScheme[] = ["auto", "light", "dark"];
+
+export const SCHEME_LABELS: Record<ColorScheme, string> = {
+  auto: "Appearance: same as your device",
+  light: "Appearance: light",
+  dark: "Appearance: dark",
+};
+
+export function nextColorScheme(scheme: ColorScheme): ColorScheme {
+  return SCHEME_ORDER[(SCHEME_ORDER.indexOf(scheme) + 1) % SCHEME_ORDER.length];
+}
 
 export function readColorScheme(): ColorScheme {
   try {

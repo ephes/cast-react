@@ -1,11 +1,34 @@
 {
+  "_colorScheme-CGSy1F0X.js": {
+    "file": "colorScheme-CGSy1F0X.js",
+    "name": "colorScheme",
+    "css": [
+      "colorScheme-DAuSGJ0R.css"
+    ]
+  },
+  "_colorScheme-DAuSGJ0R.css": {
+    "file": "colorScheme-DAuSGJ0R.css",
+    "src": "_colorScheme-DAuSGJ0R.css"
+  },
   "js/cast_react/main.tsx": {
-    "file": "main-DJwwDEcP.js",
+    "file": "main-C2fMsgZx.js",
     "name": "main",
     "src": "js/cast_react/main.tsx",
     "isEntry": true,
+    "imports": [
+      "_colorScheme-CGSy1F0X.js"
+    ],
     "css": [
-      "main-FAtlb0Hs.css"
+      "main-DqvM6Knw.css"
+    ]
+  },
+  "js/cast_react/page.ts": {
+    "file": "page-YFiCIVfL.js",
+    "name": "page",
+    "src": "js/cast_react/page.ts",
+    "isEntry": true,
+    "imports": [
+      "_colorScheme-CGSy1F0X.js"
     ]
   }
 }

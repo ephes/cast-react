@@ -1,0 +1,53 @@
+{% load django_vite i18n wagtailcore_tags %}
+{% get_current_language as current_language %}
+{% if blog %}{% pageurl blog as blog_url_for_request %}{% endif %}
+<!DOCTYPE html>
+<html lang="{% firstof LANGUAGE_CODE current_language %}">
+  <head>
+    {% block meta %}
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="color-scheme" content="light dark">
+      {% block robots %}
+        {% if blog.noindex %}
+          <meta name="robots" content="noindex, nofollow">
+        {% else %}
+          <meta name="robots" content="index, follow">
+        {% endif %}
+      {% endblock robots %}
+      <title>{% block title %}{% firstof blog.seo_title blog.title %}{% endblock title %}</title>
+      {% block description %}
+        <meta name="description" content="{% firstof blog.search_description blog.title %}">
+      {% endblock description %}
+    {% endblock meta %}
+    {# Apply the stored choice before styles load. The toggle uses colorScheme.ts. #}
+    <script>
+      try {
+        const scheme = localStorage.getItem("cast-react-color-scheme");
+        if (scheme === "light" || scheme === "dark") document.documentElement.dataset.colorScheme = scheme;
+      } catch {}
+    </script>
+    {% block feeds %}
+      {% firstof follow_links.rss blog_feed_url as rss_url %}
+      {% if rss_url %}
+        <link rel="alternate" type="application/rss+xml" title="{{ blog.title }}" href="{{ rss_url }}">
+      {% endif %}
+    {% endblock feeds %}
+    {% block css %}{% endblock css %}
+    {% block theme_assets %}
+      {% vite_hmr_client app="cast_react" %}
+      {% vite_asset 'js/cast_react/page.ts' app="cast_react" %}
+    {% endblock theme_assets %}
+    {% block javascript %}{% endblock javascript %}
+  </head>
+  <body>
+    {% block layout %}
+      <a class="cr-skip-link" href="#main-content">{% translate "Skip to content" %}</a>
+      {% include "./_page_header.html" %}
+      <main id="main-content" class="cr-main cr-prose cr-page-content" tabindex="-1"
+            {% if theme_form %}data-current-theme="{{ template_base_dir }}" data-current-label="{% translate 'Current theme' %}"{% endif %}>
+        {% block content %}{% endblock content %}
+      </main>
+    {% endblock layout %}
+  </body>
+</html>

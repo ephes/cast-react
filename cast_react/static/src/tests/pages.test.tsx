@@ -192,9 +192,12 @@ describe("post list", () => {
     const view = await open("/show/");
     const facets = Array.from(view.querySelectorAll(".cr-facet"));
     const audio = facets.find((button) => button.textContent?.startsWith("Audio"));
-    const month = facets.find((button) => button.textContent?.includes("2026"));
+    const month = view.querySelector<HTMLSelectElement>("select:has(optgroup)")!;
     await click(audio ?? null);
-    await click(month ?? null);
+    await act(async () => {
+      month.value = "2026-11";
+      month.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     await settle();
     await settle();
     expect(window.location.search).toBe("?date_facets=2026-11&category_facets=audio");

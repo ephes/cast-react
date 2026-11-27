@@ -1,0 +1,32 @@
+{% extends "./page.html" %}
+{% load i18n %}
+
+{% block title %}{% if episode %}{% blocktranslate with title=episode.title %}Transcript: {{ title }}{% endblocktranslate %}{% else %}{% translate "Transcript" %}{% endif %}{% endblock title %}
+
+{% block content %}
+  <article class="cr-transcript-page">
+    <header>
+      <h1>{% if episode %}{% blocktranslate with title=episode.title %}Transcript: {{ title }}{% endblocktranslate %}{% else %}{% translate "Transcript" %}{% endif %}</h1>
+      {% if episode %}
+        <p class="cr-transcript-page__meta">
+          <time datetime="{{ episode.visible_date|date:'c' }}">{{ episode.visible_date|date }}</time>
+          · <a href="{{ episode_url|default:episode.url }}">{% translate "Back to episode" %}</a>
+        </p>
+        <p>{% translate "Full episode transcript. Timestamps refer to the audio playback." %}</p>
+      {% endif %}
+    </header>
+    {% for segment in transcript.transcripts %}
+      <div class="cr-transcript-page__segment">
+        {% if segment.speaker or segment.start %}
+          <p class="cr-transcript-page__meta">
+            {% if segment.speaker %}<strong>{{ segment.speaker }}</strong>{% endif %}
+            {% if segment.start %}<span class="cr-transcript-page__time">{{ segment.start }}</span>{% endif %}
+          </p>
+        {% endif %}
+        <p>{{ segment.text }}</p>
+      </div>
+    {% empty %}
+      <p>{% translate "No transcript segments available." %}</p>
+    {% endfor %}
+  </article>
+{% endblock content %}

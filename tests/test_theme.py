@@ -6,9 +6,10 @@ from cast import devdata
 from cast.models import Audio, Blog, ChapterMark, Episode
 from cast.models.theme import get_required_template_names, get_template_base_dir_choices
 from django.apps import apps
-from django.template import Context, Template
+from django.http import HttpResponse
+from django.template import engines
 from django.template.loader import get_template, render_to_string
-from django.urls import reverse
+from django.urls import path, reverse
 from wagtail.models import Site
 
 import cast_react
@@ -270,24 +271,116 @@ def test_example_media_view_answers_range_requests(rf, podcast):
         get(path="../settings.py")
 
 
-def test_pages_without_a_blog_render_plainly(client, podcast):
-    # django-cast's theme chooser page extends the selected theme's base without a blog.
+def rendered_page(response) -> str:
+    assert response.status_code == 200
+    html = response.content.decode()
+    assert 'class="cr-header"' in html
+    assert 'class="cr-main cr-prose cr-page-content"' in html
+    assert 'class="cr-icon-button" data-appearance' in html
+    assert re.search(r'src="/static/cast_react/page-[\w-]+\.js"', html)
+    assert re.search(r'href="/static/cast_react/[\w-]+\.css"', html)
+    assert 'id="app"' not in html
+    assert "cast-react-configuration" not in html
+    assert "cast_react/main-" not in html
+    return html
+
+
+def test_feed_detail_uses_the_page_layout(client, podcast, settings):
+    blog, _episode, _audio = podcast
+    settings.CAST_FOLLOW_LINKS = {"spotify": "https://example.org/listen"}
+    url = reverse("cast:feed_detail", kwargs={"slug": blog.slug})
+    response = client.get(url)
+    html = rendered_page(response)
+    assert response.templates[0].name == "cast/react/feed_detail.html"
+    assert f"<title>Subscribe – {blog.title}</title>" in html
+    assert f'class="cr-header__title" href="{blog.url}"' in html
+    rss_url = reverse("cast:latest_entries_feed", kwargs={"slug": blog.slug})
+    atom_url = reverse("cast:latest_entries_atom_feed", kwargs={"slug": blog.slug})
+    assert f'class="cr-icon-button" href="{rss_url}"' in html
+    assert "Where to listen" in html
+    assert '<a href="https://example.org/listen">Spotify</a>' in html
+    assert f'<a href="{rss_url}">RSS</a>' in html
+    assert f'<a href="{atom_url}">Atom</a>' in html
+    assert '<dl class="cr-podcast-feeds">' in html
+    assert "<dt>MP3</dt>" in html
+    assert "data-copy-feed" in html
+
+
+@pytest.mark.parametrize("with_episode", [True, False])
+def test_transcript_uses_the_page_layout(client, podcast, with_episode):
+    blog, episode, _audio = podcast
+    if with_episode:
+        url = episode.get_transcript_url()
+    else:
+        url = reverse("cast:html-transcript-no-post", args=[episode.transcript.pk])
+    response = client.get(url, {"theme": THEME})
+    html = rendered_page(response)
+    assert response.templates[0].name == "cast/react/transcript.html"
+    assert 'class="cr-transcript-page__segment"' in html
+    assert '<span class="cr-transcript-page__time">00:00:01.000</span>' in html
+    assert "<p>Hello.</p>" in html
+    if with_episode:
+        assert f"<title>Transcript: {episode.title}</title>" in html
+        assert f'class="cr-header__title" href="{blog.url}"' in html
+        assert f'<a href="{episode.url}">Back to episode</a>' in html
+        assert re.search(r'<time datetime="\d{4}-\d{2}-\d{2}T[^"]+">', html)
+    else:
+        assert "<title>Transcript</title>" in html
+        assert 'class="cr-header__title" href="/">Start page</a>' in html
+        assert "Back to episode" not in html
+
+
+def test_theme_chooser_uses_the_page_layout(client, db):
     url = reverse("cast:select-theme")
     assert client.post(url, {"template_base_dir": THEME, "next": "/"}).status_code == 302
     response = client.get(url)
-    assert response.status_code == 200
-    html = response.content.decode()
-    assert 'class="cr-plain"' in html
+    html = rendered_page(response)
     assert "<title>Select Theme</title>" in html
-    assert '<a href="/">Start page</a>' in html
-    assert f'value="{THEME}"' in html
-    assert "cast-react-configuration" not in html
-    assert "cast_react/main" not in html
+    assert 'class="cr-header__title" href="/">Start page</a>' in html
+    assert 'class="cast-select-theme"' in html
+    assert f'data-current-theme="{THEME}"' in html
+    assert f'name="template_base_dir" value="{THEME}"' in html
+    assert 'class="btn btn-primary"' in html
+
+    partial = client.get(url, HTTP_HX_REQUEST="true")
+    assert partial.status_code == 200
+    assert partial.templates[0].name == "cast/react/select_theme.html"
+    assert 'aria-current="true"' in partial.content.decode()
+    assert '<span class="cr-current-theme">Current theme</span>' in partial.content.decode()
 
 
-def test_site_page_content_block_renders_without_a_blog():
-    html = Template('{% extends "cast/react/base.html" %}{% block content %}<p>About us</p>{% endblock %}').render(
-        Context({})
+def about(request):
+    template = engines["django"].from_string(
+        '{% extends "cast/react/base.html" %}'
+        "{% block title %}About us{% endblock %}"
+        "{% block css %}<style>/* site styles */</style>{% endblock %}"
+        "{% block javascript %}{{ block.super }}<script>/* site script */</script>{% endblock %}"
+        "{% block content %}<h1>About us</h1><p>Our site.</p>{% endblock %}"
     )
-    assert "<p>About us</p>" in html
-    assert "cast-react-configuration" not in html
+    return HttpResponse(template.render({"root_nav_links": [("/contact/", "Contact")]}, request))
+
+
+urlpatterns = [path("about/", about)]
+
+
+@pytest.mark.urls(__name__)
+def test_site_page_content_block_renders_without_a_blog(client, db):
+    Site.objects.filter(is_default_site=True).update(site_name="Our site")
+    html = rendered_page(client.get("/about/", SCRIPT_NAME="/subsite"))
+    assert "<title>About us</title>" in html
+    assert "<h1>About us</h1><p>Our site.</p>" in html
+    assert 'class="cr-header__title" href="/subsite/">Our site</a>' in html
+    assert '<a href="/contact/">Contact</a>' in html
+    assert "<style>/* site styles */</style>" in html
+    assert "<script>/* site script */</script>" in html
+
+
+def test_site_page_keeps_theme_assets_when_overriding_css_and_javascript():
+    template = engines["django"].from_string(
+        '{% extends "cast/react/base.html" %}'
+        "{% block css %}<style>/* site styles */</style>{% endblock %}"
+        "{% block javascript %}<script>/* site script */</script>{% endblock %}"
+    )
+    html = rendered_page(HttpResponse(template.render()))
+    assert "<style>/* site styles */</style>" in html
+    assert "<script>/* site script */</script>" in html
