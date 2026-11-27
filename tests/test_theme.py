@@ -122,6 +122,19 @@ def player_payload(html: str, audio_pk: int) -> dict:
     return json.loads(script.group(1))
 
 
+def test_api_post_body_renders_overview_and_detail_in_the_right_fields(client, podcast):
+    blog, episode, _audio = podcast
+    item = api_item(client, blog, slug=episode.slug, fields="html_overview,html_detail")
+    overview, detail = item["html_overview"], item["html_detail"]
+    for html in (overview, detail):
+        assert '<section class="block-overview">' in html
+        assert "in_all heading" in html
+    assert '<section class="block-detail">' not in overview
+    assert "only_in_detail heading" not in overview
+    assert '<section class="block-detail">' in detail
+    assert "only_in_detail heading" in detail
+
+
 def test_api_overview_html_carries_article_data_and_player_payload(client, podcast):
     blog, _episode, audio = podcast
     item = api_item(client, blog, fields="html_overview")

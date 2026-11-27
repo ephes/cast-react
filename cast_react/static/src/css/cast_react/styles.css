@@ -363,6 +363,12 @@ noscript p {
   text-decoration-thickness: 0.06em;
 }
 
+.cr-post-row__more {
+  margin-top: 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 .cr-play-episode {
   display: inline-flex;
   align-items: center;

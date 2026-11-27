@@ -18,8 +18,9 @@ What you get:
   counts by Gregorian year, newest first, with localized month names.
   **Custom date range** folds away the From and Until fields and opens when
   a range is set.
-- Post and episode pages with comments (including replies) and a lightbox for
-  galleries.
+- Each list row shows the post's overview with a **Read more** link. Post and
+  episode pages show the overview and detail, with comments (including replies)
+  and a lightbox for galleries.
 - An audio player made for this theme: the seek bar is divided into chapters,
   with a chapter list, a transcript you can search and that follows playback,
   playback speed, resume, and links that start at a given time (`?t=754`).
@@ -34,7 +35,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.4"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.6"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player

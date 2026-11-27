@@ -58,9 +58,13 @@ function normalizePayload(payload: PlayerPayload): PlayerPayload {
 // at the top itself.
 export function parsePostHtml(
   html: string,
-  options: { playerSlots: "none" | "afterFirst"; permalink?: string },
+  options: { playerSlots: "none" | "afterFirst"; permalink?: string; excludeDetail?: boolean },
 ): ParsedPost {
   const doc = new DOMParser().parseFromString(html || "", "text/html");
+  if (options.excludeDetail) {
+    // Only the post's own detail blocks: direct children of the article post_body.html renders.
+    doc.querySelectorAll("body > article > section.block-detail").forEach((section) => section.remove());
+  }
 
   const data = doc.querySelector<HTMLElement>(".cast-react-article-data")?.dataset ?? {};
   const meta: ArticleMeta = {

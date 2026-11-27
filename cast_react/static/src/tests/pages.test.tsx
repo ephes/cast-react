@@ -43,7 +43,12 @@ const playerMarkup = `
 
 const body = (text: string, extra = "") => `<article>
   <div class="cast-react-article-data" hidden data-article-date="Nov. 24, 2026" data-article-author="Mara"></div>
-  <section class="block-paragraph"><p>${text}</p></section>${extra}</article>`;
+  <section class="block-overview"><p>${text}</p></section>${extra}</article>`;
+
+const episodeOneBody = body(
+  "Teaser one",
+  playerMarkup + '<section class="block-detail"><p>The whole story</p></section>',
+);
 
 const post = (id: number, slug: string, title: string, type = "cast.Episode") => ({
   id,
@@ -70,7 +75,7 @@ function respond(url: URL): Response {
       items: [
         {
           ...post(1, "episode-one", "Episode one"),
-          html_detail: body("The whole story", playerMarkup),
+          html_detail: episodeOneBody,
           comments: [
             { id: 1, parent: null, user: "Jonas", date: "2026-11-26T04:12:00Z", comment: "Great episode." },
             { id: 2, parent: 1, user: "Priya", date: "2026-11-26T11:12:00Z", comment: "I agree." },
@@ -99,7 +104,7 @@ function respond(url: URL): Response {
   return jsonResponse({
     meta: { total_count: 3 },
     items: [
-      { ...post(1, "episode-one", "Episode one"), html_overview: body("Teaser one", playerMarkup) },
+      { ...post(1, "episode-one", "Episode one"), html_overview: episodeOneBody },
       { ...post(2, "episode-two", "Episode two"), html_overview: body("Teaser two") },
     ],
   });
@@ -227,6 +232,28 @@ describe("post list", () => {
     expect(list?.searchParams.get("render_for_feed")).toBe("false");
     expect(list?.searchParams.get("use_post_filter")).toBe("true");
     expect(list?.searchParams.get("theme")).toBe("react");
+  });
+
+  it("shows only the overview on the list and opens the full post from Read more", async () => {
+    const view = await open("/show/");
+    const row = view.querySelector(".cr-post-row")!;
+    expect(row.querySelector(".block-overview")?.textContent).toBe("Teaser one");
+    expect(row.querySelector(".block-detail")).toBeNull();
+    expect(row.textContent).not.toContain("The whole story");
+
+    const links = view.querySelectorAll(".cr-post-row__more a");
+    expect(links).toHaveLength(2);
+    const link = links[0];
+    expect(link.textContent).toBe("Read more →");
+    expect(link.getAttribute("aria-label")).toBe("Read more about Episode one");
+    expect(link.getAttribute("href")).toBe("/show/episode-one/");
+    const list = requests.find((url) => url.pathname === "/cast/api/wagtail/pages/");
+    expect(list?.searchParams.get("fields")).toBe("html_overview,visible_date,cover_image_poster_url");
+
+    await follow(link);
+    expect(window.location.pathname).toBe("/show/episode-one/");
+    expect(view.querySelector(".cr-detail .block-overview")?.textContent).toBe("Teaser one");
+    expect(view.querySelector(".cr-detail .block-detail")?.textContent).toBe("The whole story");
   });
 
   it("never asks the API for more posts than it hands out at once", async () => {

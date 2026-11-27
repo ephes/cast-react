@@ -1,5 +1,6 @@
 {
   "name": "cast-react",
+  "version": "0.0.6",
   "private": true,
   "type": "module",
   "scripts": {

@@ -40,7 +40,7 @@ function PlayEpisodeButton({ track }: { track: PlayerPayload }) {
 function PostRow({ post, config }: { post: Post; config: Config }) {
   const href = detailHref(config.blogUrl, post.meta.slug);
   const parsed = useMemo(
-    () => parsePostHtml(post.html_overview ?? "", { playerSlots: "none", permalink: href }),
+    () => parsePostHtml(post.html_overview ?? "", { playerSlots: "none", permalink: href, excludeDetail: true }),
     [post.html_overview, href],
   );
   const prefetch = [postDetailUrl(config, post.meta.slug, post.meta.type)];
@@ -64,6 +64,11 @@ function PostRow({ post, config }: { post: Post; config: Config }) {
             </Link>
           </h2>
           {parsed.html && <PostContent html={parsed.html} className="cr-prose cr-prose--teaser" />}
+          <p className="cr-post-row__more">
+            <Link href={href} prefetch={prefetch} aria-label={`Read more about ${post.title}`}>
+              Read more →
+            </Link>
+          </p>
           {track && <PlayEpisodeButton track={track} />}
         </div>
       </article>

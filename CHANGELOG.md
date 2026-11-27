@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.6
+
+- Every list row has a Read more link to the full post.
+- List rows discard detail blocks if the API includes them in the overview.
+
 ## 0.0.5
 
 - Tags and categories show the 10 most-used choices and open a searchable
