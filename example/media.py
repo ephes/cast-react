@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
 from django.http import FileResponse, Http404, HttpRequest, HttpResponse
 from django.utils._os import safe_join
 
@@ -20,7 +21,7 @@ RANGE = re.compile(r"^bytes=(\d*)-(\d*)$")
 def serve_media(request: HttpRequest, path: str) -> HttpResponse | FileResponse:
     try:
         file_path = Path(safe_join(str(settings.MEDIA_ROOT), path))
-    except ValueError as error:
+    except (ValueError, SuspiciousFileOperation) as error:
         raise Http404("Not found") from error
     if not file_path.is_file():
         raise Http404("Not found")
