@@ -1,11 +1,7 @@
-{% load i18n wagtailcore_tags %}
+{% load i18n %}
 {% if blog %}
   {% firstof blog_url_for_request request.META.SCRIPT_NAME|add:'/' as title_url %}
-  {% firstof blog.title as title_text %}
 {% else %}
-  {% if request %}{% wagtail_site as current_site %}{% endif %}
-  {% translate "Start page" as start_page %}
-  {% firstof current_site.site_name start_page as title_text %}
   {% firstof request.META.SCRIPT_NAME|add:'/' '/' as title_url %}
 {% endif %}
 {% firstof follow_links.feed_detail follow_links.rss blog_feed_url as feed_url %}

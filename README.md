@@ -27,6 +27,11 @@ What you get:
   An episode keeps playing in a mini player while you move through the site.
 - Light and dark appearance, from phone to large desktop, without a CSS
   framework, UI kit or web font.
+- The **Site theme** menu in the footer switches between installed themes on
+  both React and Django-rendered pages when more than one theme is available.
+  On Django-rendered pages it reflects the active theme choice, including on
+  pages that always use the React layout. The full theme chooser has its own
+  list of themes.
 
 ## Installation
 

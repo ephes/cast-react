@@ -34,11 +34,11 @@ export function Pagination({
     <nav className="cr-pagination" aria-label="Pages">
       {current > 1 ? (
         <Link className="cr-pagination__step" href={hrefFor(current - 1)} prefetch={prefetchFor(current - 1)} rel="prev">
-          <ChevronLeftIcon size={18} /> Previous
+          <ChevronLeftIcon size={18} /> <span>Previous</span>
         </Link>
       ) : (
         <span className="cr-pagination__step" aria-disabled="true">
-          <ChevronLeftIcon size={18} /> Previous
+          <ChevronLeftIcon size={18} /> <span>Previous</span>
         </span>
       )}
       <ol className="cr-pagination__pages">
@@ -64,11 +64,11 @@ export function Pagination({
       </ol>
       {current < total ? (
         <Link className="cr-pagination__step" href={hrefFor(current + 1)} prefetch={prefetchFor(current + 1)} rel="next">
-          Next <ChevronRightIcon size={18} />
+          <span>Next</span> <ChevronRightIcon size={18} />
         </Link>
       ) : (
         <span className="cr-pagination__step" aria-disabled="true">
-          Next <ChevronRightIcon size={18} />
+          <span>Next</span> <ChevronRightIcon size={18} />
         </span>
       )}
     </nav>

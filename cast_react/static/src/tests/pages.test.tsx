@@ -59,6 +59,12 @@ const post = (id: number, slug: string, title: string, type = "cast.Episode") =>
 let requests: URL[] = [];
 
 function respond(url: URL): Response {
+  if (url.pathname === "/cast/api/themes/") {
+    return jsonResponse({ items: [
+      { slug: "bootstrap5", name: "Bootstrap 5", selected: false },
+      { slug: "react", name: "React", selected: true },
+    ] });
+  }
   if (url.pathname.startsWith("/cast/api/facet_counts/")) {
     return jsonResponse({
       facet_counts: {
@@ -173,6 +179,17 @@ it("shows nested header links in a scrolling row on phones and hides empty navig
   expect(rules.find((rule) => rule.selectorText === ".cr-header__nav")?.style.overflowX).toBe("auto");
   expect(rules.find((rule) => rule.selectorText === ".cr-header__nav > ul")?.style.display).toBe("flex");
   expect(rules.find((rule) => rule.selectorText === ".cr-header__nav > ul > li")?.style.display).toBe("flex");
+});
+
+it("associates the footer's Site theme label with its select", async () => {
+  window.history.replaceState(null, "", "/show/");
+  const view = await render(<App config={{ ...config, themeListApiUrl: "/cast/api/themes/" }} />);
+  await settle();
+
+  const select = view.querySelector<HTMLSelectElement>("footer select")!;
+  expect(Array.from(select.labels ?? [], (label) => label.textContent)).toEqual(["Site theme"]);
+  expect(select.value).toBe("react");
+  expect(Array.from(select.options, (option) => option.textContent)).toEqual(["Bootstrap 5", "React"]);
 });
 
 describe("post list", () => {

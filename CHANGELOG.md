@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.7
+
+- Dropdown arrows match the field text in light and dark mode and stay on the
+  right with space reserved for them in either text direction. List boxes and
+  multi-selects keep their native appearance.
+- The Site theme menu lines up with the header and sits below the site name on
+  phones. It shows the active theme choice on Django-rendered pages and is
+  hidden on the full theme chooser.
+- Search, filters, pagination and theme chooser buttons have more room on narrow screens.
+
 ## 0.0.6
 
 - Every list row has a Read more link to the full post.

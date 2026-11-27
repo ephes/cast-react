@@ -1,5 +1,6 @@
 import json
 import re
+from html import unescape
 
 import pytest
 from cast import devdata
@@ -9,7 +10,7 @@ from django.apps import apps
 from django.http import HttpResponse
 from django.template import engines
 from django.template.loader import get_template, render_to_string
-from django.urls import path, reverse
+from django.urls import include, path, reverse
 from wagtail.models import Site
 
 import cast_react
@@ -324,6 +325,30 @@ def test_feed_detail_uses_the_page_layout(client, podcast, settings):
     assert "data-copy-feed" in html
 
 
+def test_server_footer_theme_select_has_a_label_and_returns_to_the_page(client, podcast):
+    blog, _episode, _audio = podcast
+    url = reverse("cast:feed_detail", kwargs={"slug": blog.slug})
+    response = client.get(url, {"theme": THEME, "template_base_dir": THEME, "keep": ["a", "b"]})
+    html = rendered_page(response)
+    footer = re.search(r'<footer class="cr-footer">(.*?)</footer>', html, re.DOTALL)
+    assert footer is not None
+    select_id = re.search(r'<select id="([^"]+)" name="template_base_dir" required>', footer[1])
+    assert select_id is not None
+    assert f'<label for="{select_id[1]}">Site theme</label>' in footer[1]
+    assert f'<option value="{THEME}" selected>' in footer[1]
+    assert '<noscript><button class="cr-button" type="submit">Apply theme</button></noscript>' in footer[1]
+
+    next_field = re.search(r'<input type="hidden" name="next" value="([^"]+)">', footer[1])
+    assert next_field is not None
+    next_url = unescape(next_field[1])
+    assert next_url == f"{url}?keep=a&keep=b"
+    other_theme = next(slug for slug, _name in get_template_base_dir_choices() if slug != THEME)
+    response = client.post(reverse("cast:select-theme"), {"template_base_dir": other_theme, "next": next_url})
+    assert response.status_code == 302
+    assert response["Location"] == next_url
+    assert client.session["template_base_dir"] == other_theme
+
+
 @pytest.mark.parametrize("with_episode", [True, False])
 def test_transcript_uses_the_page_layout(client, podcast, with_episode):
     blog, episode, _audio = podcast
@@ -348,14 +373,18 @@ def test_transcript_uses_the_page_layout(client, podcast, with_episode):
         assert "Back to episode" not in html
 
 
-def test_theme_chooser_uses_the_page_layout(client, db):
-    url = reverse("cast:select-theme")
+@pytest.mark.urls(__name__)
+@pytest.mark.parametrize("namespace", ["cast", "podcast"])
+def test_theme_chooser_uses_the_page_layout(client, db, namespace):
+    url = reverse(f"{namespace}:select-theme")
     assert client.post(url, {"template_base_dir": THEME, "next": "/"}).status_code == 302
     response = client.get(url)
     html = rendered_page(response)
     assert "<title>Select Theme</title>" in html
     assert 'class="cr-header__title" href="/">Start page</a>' in html
     assert 'class="cast-select-theme"' in html
+    assert 'class="cr-footer"' in html
+    assert 'class="cr-theme-select"' not in html
     assert f'data-current-theme="{THEME}"' in html
     assert f'name="template_base_dir" value="{THEME}"' in html
     assert 'class="btn btn-primary"' in html
@@ -378,7 +407,39 @@ def about(request):
     return HttpResponse(template.render({"root_nav_links": [("/contact/", "Contact")]}, request))
 
 
-urlpatterns = [path("about/", about)]
+urlpatterns = [
+    path("about/", about),
+    path("cast/", include("cast.urls", namespace="cast")),
+    path("podcast/", include("cast.urls", namespace="podcast")),
+]
+
+
+@pytest.mark.urls(__name__)
+@pytest.mark.parametrize(("saved_theme", "selected_theme"), [("plain", "plain"), ("removed-theme", "")])
+def test_fixed_react_page_footer_uses_the_saved_theme(client, db, saved_theme, selected_theme):
+    session = client.session
+    session["template_base_dir"] = saved_theme
+    session.save()
+
+    html = rendered_page(client.get("/about/"))
+    select = re.search(r'<select[^>]+name="template_base_dir"[^>]*>(.*?)</select>', html, re.DOTALL)
+    assert select is not None
+    options = re.findall(r'<option value="([^"]*)"([^>]*)>', select[1])
+    assert [value for value, attrs in options if "selected" in attrs] == [selected_theme]
+    if not selected_theme:
+        assert options[0] == ("", " selected disabled")
+        assert '<option value="" selected disabled>Choose…</option>' in select[1]
+    else:
+        assert all(value for value, _ in options)
+
+
+def test_server_footer_defaults_to_react_without_theme_context(rf, db):
+    html = render_to_string(
+        "cast/react/_page_footer.html",
+        {"template_base_dir": ""},
+        request=rf.get("/about/"),
+    )
+    assert f'<option value="{THEME}" selected>' in html
 
 
 @pytest.mark.urls(__name__)

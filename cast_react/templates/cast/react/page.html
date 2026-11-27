@@ -42,12 +42,16 @@
   </head>
   <body>
     {% block layout %}
+      {% if request and not blog %}{% wagtail_site as current_site %}{% endif %}
+      {% translate "Start page" as start_page %}
+      {% firstof blog.title current_site.site_name start_page as title_text %}
       <a class="cr-skip-link" href="#main-content">{% translate "Skip to content" %}</a>
       {% include "./_page_header.html" %}
       <main id="main-content" class="cr-main cr-prose cr-page-content" tabindex="-1"
             {% if theme_form %}data-current-theme="{{ template_base_dir }}" data-current-label="{% translate 'Current theme' %}"{% endif %}>
         {% block content %}{% endblock content %}
       </main>
+      {% include "./_page_footer.html" %}
     {% endblock layout %}
   </body>
 </html>

@@ -22,6 +22,9 @@ if (appearance) {
   });
 }
 
+const themeForm = document.querySelector<HTMLFormElement>("form.cr-theme-select");
+themeForm?.querySelector("select")?.addEventListener("change", () => themeForm.requestSubmit());
+
 // django-cast owns the full chooser's forms. Add the current label to its existing button.
 const chooser = document.querySelector<HTMLElement>("[data-current-theme]");
 if (chooser) {

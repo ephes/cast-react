@@ -1,0 +1,25 @@
+{% load cast_react_tags i18n %}
+{% url 'cast:select-theme' as select_theme_url %}
+{% cast_react_is_theme_chooser as is_theme_chooser %}
+<footer class="cr-footer">
+  <div class="cr-footer__inner">
+    <p>{{ title_text }}</p>
+    {% if request and not is_theme_chooser and select_theme_url and template_base_dir_choices|length > 1 %}
+      {% cast_react_selected_theme template_base_dir_choices template_base_dir request.session.template_base_dir as selected_theme %}
+      <form class="cr-theme-select" action="{{ select_theme_url }}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% cast_react_theme_return_path request %}">
+        <label for="cr-theme-select">{% translate "Site theme" %}</label>
+        <select id="cr-theme-select" name="template_base_dir" required>
+          {% if not selected_theme %}
+            <option value="" selected disabled>{% translate "Choose…" %}</option>
+          {% endif %}
+          {% for theme_slug, theme_name in template_base_dir_choices %}
+            <option value="{{ theme_slug }}"{% if theme_slug == selected_theme %} selected{% endif %}>{{ theme_name }}</option>
+          {% endfor %}
+        </select>
+        <noscript><button class="cr-button" type="submit">{% translate "Apply theme" %}</button></noscript>
+      </form>
+    {% endif %}
+  </div>
+</footer>
