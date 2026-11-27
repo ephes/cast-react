@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.9
+
+- The Month, Order, and Site theme menus open on solid backgrounds that match
+  light or dark appearance in supported browsers. A checkmark shows the current
+  selection, and long month lists scroll within the menu.
+- The expanded tag and category lists have a visible border and a solid background.
+
 ## 0.0.8
 
 - Podcasts have a visible Subscribe link in the header and podcast app links

@@ -218,6 +218,29 @@ it("associates the footer's Site theme label with its select", async () => {
   expect(Array.from(select.options, (option) => option.textContent)).toEqual(["Bootstrap 5", "React"]);
 });
 
+it("opts both parts of single-line selects into customizable appearance", async () => {
+  const view = await render(<style>{sharedStyles}</style>);
+  const support = Array.from(view.querySelector("style")!.sheet!.cssRules).find(
+    (rule): rule is CSSSupportsRule =>
+      rule instanceof CSSSupportsRule && rule.conditionText === "(appearance: base-select)",
+  );
+  const [field, picker] = Array.from(support?.cssRules ?? []).filter(
+    (rule): rule is CSSStyleRule =>
+      rule instanceof CSSStyleRule && rule.style.getPropertyValue("appearance") === "base-select",
+  );
+  expect(picker?.selectorText).toBe(`${field?.selectorText}::picker(select)`);
+
+  const select = document.createElement("select");
+  expect(select.matches(field.selectorText)).toBe(true);
+  select.size = 1;
+  expect(select.matches(field.selectorText)).toBe(true);
+  select.multiple = true;
+  expect(select.matches(field.selectorText)).toBe(false);
+  select.multiple = false;
+  select.size = 2;
+  expect(select.matches(field.selectorText)).toBe(false);
+});
+
 it("shows the labeled header button and configured footer follow links", async () => {
   const view = await open("/show/", { subscribe: subscription, feedUrl: "" });
   const header = view.querySelector(".cr-header__subscribe")!;

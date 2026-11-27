@@ -308,11 +308,12 @@ it("groups months newest first, localizes labels and sets and clears date_facets
   expect(select.value).toBe("2024-01");
   expect(Array.from(select.querySelectorAll("optgroup"), (group) => [
     group.label,
+    group.querySelector("legend")?.textContent,
     Array.from(group.querySelectorAll("option"), (option) => option.text),
   ])).toEqual([
-    ["2026", ["November 2026 (1)", "Oktober 2026 (2)"]],
-    ["2025", ["Dezember 2025 (6)", "Februar 2025 (8)"]],
-    ["2024", ["Januar 2024 (0)"]],
+    ["2026", "2026", ["November 2026 (1)", "Oktober 2026 (2)"]],
+    ["2025", "2025", ["Dezember 2025 (6)", "Februar 2025 (8)"]],
+    ["2024", "2024", ["Januar 2024 (0)"]],
   ]);
   await act(async () => {
     select.value = "2026-10";

@@ -227,6 +227,7 @@ function MonthSelect({
         {selected && !MONTH_SLUG.test(selected) && <option value={selected}>{selected}</option>}
         {Array.from(byYear, ([year, group]) => (
           <optgroup key={year} label={year}>
+            <legend>{year}</legend>
             {group.map(({ slug, count }) => (
               <option key={slug} value={slug}>
                 {format.format(new Date(`${slug}-01T00:00:00Z`))} ({count})

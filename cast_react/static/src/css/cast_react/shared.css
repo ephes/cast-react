@@ -270,6 +270,135 @@ select:disabled {
   opacity: 0.55;
 }
 
+@supports (appearance: base-select) {
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) {
+    appearance: base-select;
+    position: relative;
+    background-image: none;
+    padding-inline: 0.625rem 2.25rem;
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"])::picker-icon {
+    content: "";
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 0.875rem;
+    box-sizing: border-box;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin: 0;
+    border: solid currentColor;
+    border-width: 0 1.5px 1.5px 0;
+    transform: translateY(-65%) rotate(45deg);
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"])::picker-icon {
+      transition: transform 150ms ease-out;
+    }
+
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]):open::picker-icon {
+      transform: translateY(-35%) rotate(225deg);
+    }
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"])::picker(select) {
+    appearance: base-select;
+    color-scheme: inherit;
+    box-sizing: border-box;
+    min-inline-size: anchor-size(self-inline);
+    /* Leave room for the picker on at least one side of the field. */
+    max-block-size: min(22rem, 50vh - 2rem);
+    max-block-size: min(22rem, (100vh - anchor-size(self-block, 2.5rem)) / 2 - 0.5rem);
+    overflow: auto;
+    margin-block: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid var(--cr-line);
+    border-radius: var(--cr-radius);
+    background: var(--cr-surface);
+    color: var(--cr-ink);
+    box-shadow: 0 0.375rem 1.25rem light-dark(rgb(24 32 43 / 18%), rgb(0 0 0 / 55%));
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) optgroup {
+    margin-block-start: 0.25rem;
+    padding: 0;
+    border: 0;
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) optgroup legend {
+    padding: 0.25rem 0.625rem 0;
+    color: var(--cr-muted);
+    font: 600 0.8125rem/1.4 var(--cr-sans);
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-block-size: 2.25rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--cr-radius);
+    color: var(--cr-ink);
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:enabled:is(:hover, :focus-visible) {
+    background: var(--cr-accent-soft);
+    outline-offset: -2px;
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:checked {
+    font-weight: 600;
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: var(--cr-accent);
+  }
+
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:disabled,
+  select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:disabled::checkmark {
+    color: var(--cr-muted);
+  }
+
+  @media (forced-colors: active) {
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"])::picker(select) {
+      background: Canvas;
+      color: CanvasText;
+      border-color: ButtonText;
+      box-shadow: none;
+    }
+
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option {
+      color: CanvasText;
+    }
+
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option::checkmark {
+      color: LinkText;
+    }
+
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]) optgroup legend,
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:disabled,
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:disabled::checkmark {
+      color: GrayText;
+    }
+
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:enabled:is(:hover, :focus-visible) {
+      background: Highlight;
+      color: HighlightText;
+      outline-color: HighlightText;
+    }
+
+    select:where(:not([multiple], [size]), :not([multiple])[size="1"]) option:enabled:is(:hover, :focus-visible)::checkmark {
+      color: HighlightText;
+    }
+  }
+}
+
 @media (forced-colors: active) {
   select {
     /* Keep the background strokes and use the system palette for the field. */

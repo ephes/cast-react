@@ -36,6 +36,9 @@ What you get:
   On Django-rendered pages it reflects the active theme choice, including on
   pages that always use the React layout. The full theme chooser has its own
   list of themes.
+- The Month, Order, and Site theme menus open on solid surfaces that match the
+  reader's appearance setting in browsers that support customizable selects.
+  Older browsers use their built-in menus.
 
 ## Installation
 
@@ -44,7 +47,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.8"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.9"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player

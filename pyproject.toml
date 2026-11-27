@@ -7,7 +7,7 @@ name = "cast-react"
 authors = [
     {name = "Jochen Wersdörfer", email = "jochen-castreact@wersdoerfer.de"},
 ]
-version = "0.0.8"
+version = "0.0.9"
 dynamic = ["description"]
 readme = "README.md"
 requires-python = ">=3.11"
