@@ -2,6 +2,7 @@ import "vite/modulepreload-polyfill";
 import "../../css/cast_react/shared.css";
 
 import { applyColorScheme, nextColorScheme, readColorScheme, SCHEME_LABELS, storeColorScheme } from "./colorScheme";
+import { initFeedCopy } from "./feedCopy";
 
 const appearance = document.querySelector<HTMLButtonElement>("[data-appearance]");
 let scheme = readColorScheme();
@@ -41,29 +42,4 @@ if (chooser) {
   }
 }
 
-if (navigator.clipboard?.writeText) {
-  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-copy-feed]")) {
-    const link = button.parentElement?.querySelector("a");
-    if (!link) continue;
-    const copy = button.textContent;
-    const copyLabel = button.getAttribute("aria-label") ?? "";
-    let reset: number | undefined;
-    button.hidden = false;
-    button.addEventListener("click", async () => {
-      let status: string | undefined;
-      try {
-        await navigator.clipboard.writeText(link.href);
-        status = button.dataset.copied;
-      } catch {
-        status = button.dataset.copyFailed;
-      }
-      button.textContent = status ?? copy;
-      button.setAttribute("aria-label", status ?? copyLabel);
-      window.clearTimeout(reset);
-      reset = window.setTimeout(() => {
-        button.textContent = copy;
-        button.setAttribute("aria-label", copyLabel);
-      }, 1800);
-    });
-  }
-}
+initFeedCopy();

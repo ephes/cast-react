@@ -1,7 +1,7 @@
 import { act } from "react";
 import { clearJsonCache } from "@/api";
 import { App } from "@/components/App";
-import type { Config } from "@/config";
+import { readConfig, type Config, type Subscribe } from "@/config";
 import { resetPlayerForTests } from "@/player/store";
 import sharedStyles from "../css/cast_react/shared.css?inline";
 import { FakeAudio, cleanup, click, jsonResponse, render, settle } from "./helpers";
@@ -22,10 +22,30 @@ const config: Config = {
   themeListApiUrl: "",
   themeUpdateApiUrl: "",
   feedUrl: "/feed/",
+  subscribe: null,
   preview: null,
   routeName: "PostList",
   postSlug: "",
   pageType: "",
+};
+
+const subscription: Subscribe = {
+  feedPageUrl: "/show/feed/",
+  isPodcast: true,
+  podcastRssUrl: "https://example.org/show/feed/podcast/mp3/rss.xml",
+  blogRssUrl: "https://example.org/show/feed/rss.xml",
+  platformLinks: [
+    { id: "apple_podcasts", label: "Apple Podcasts", icon: "podcast", url: "https://example.org/apple" },
+    { id: "overcast", label: "Overcast", icon: "headphones", url: "https://example.org/overcast" },
+    { id: "pocket_casts", label: "Pocket Casts", icon: "headphones", url: "https://example.org/pocket-casts" },
+    { id: "spotify", label: "Spotify", icon: "music", url: "https://example.org/spotify" },
+    { id: "youtube", label: "YouTube", icon: "video", url: "https://example.org/youtube" },
+    { id: "castro", label: "Castro", icon: "headphones", url: "https://example.org/castro" },
+  ],
+  followLinks: [
+    { label: "Mastodon", url: "https://social.example.org/@groundloop", rel: "me" },
+    { label: "E-mail", url: "mailto:hello@example.org", rel: "" },
+  ],
 };
 
 const playerMarkup = `
@@ -92,6 +112,12 @@ function respond(url: URL): Response {
       ],
     });
   }
+  if (slug === "notes") {
+    return jsonResponse({
+      meta: { total_count: 1 },
+      items: [{ ...post(9, "notes", "Studio notes", "cast.Post"), html_detail: body("Writing about the show") }],
+    });
+  }
   if (slug) {
     return jsonResponse({ meta: { total_count: 0 }, items: [] });
   }
@@ -116,9 +142,9 @@ function respond(url: URL): Response {
   });
 }
 
-async function open(path: string): Promise<HTMLElement> {
+async function open(path: string, overrides: Partial<Config> = {}): Promise<HTMLElement> {
   window.history.replaceState(null, "", path);
-  const view = await render(<App config={config} />);
+  const view = await render(<App config={{ ...config, ...overrides }} />);
   await settle();
   return view;
 }
@@ -190,6 +216,78 @@ it("associates the footer's Site theme label with its select", async () => {
   expect(Array.from(select.labels ?? [], (label) => label.textContent)).toEqual(["Site theme"]);
   expect(select.value).toBe("react");
   expect(Array.from(select.options, (option) => option.textContent)).toEqual(["Bootstrap 5", "React"]);
+});
+
+it("shows the labeled header button and configured footer follow links", async () => {
+  const view = await open("/show/", { subscribe: subscription, feedUrl: "" });
+  const header = view.querySelector(".cr-header__subscribe")!;
+  expect(header.textContent).toBe("Subscribe");
+  expect(header.getAttribute("href")).toBe("/show/feed/");
+  expect(header.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  expect(header.nextElementSibling?.tagName).toBe("BUTTON");
+
+  const footer = view.querySelector('footer nav[aria-label="Follow"]')!;
+  expect(footer.querySelector("a")?.getAttribute("href")).toBe("/show/feed/");
+  expect(footer.querySelector("a")?.textContent).toBe("Subscribe");
+  expect(footer.querySelector('a[rel="me"]')?.textContent).toBe("Mastodon");
+  expect(footer.querySelector('a[href^="mailto:"]')?.textContent).toBe("E-mail");
+});
+
+it("uses the template's data-feed-url for the header and footer when subscription JSON is present", async () => {
+  const doc = new DOMParser().parseFromString(
+    `<script id="cast-react-configuration" type="application/json" data-blog-id="3"
+             data-feed-url="/custom-subscribe/"></script>
+     <script id="cast-react-subscribe" type="application/json">${JSON.stringify(subscription)}</script>`,
+    "text/html",
+  );
+  const { feedUrl, subscribe } = readConfig(doc);
+  const view = await open("/show/", { feedUrl, subscribe });
+
+  expect(view.querySelector(".cr-header__subscribe")?.getAttribute("href")).toBe("/custom-subscribe/");
+  expect(view.querySelector(".cr-footer__links a")?.getAttribute("href")).toBe("/custom-subscribe/");
+  expect(view.querySelector(".cr-subscribe__more")?.getAttribute("href")).toBe("/show/feed/");
+});
+
+it.each(["/show/", "/show/?category_facets=audio&page=2"])("offers apps below the podcast description at %s", async (path) => {
+  const view = await open(path, { subscribe: subscription });
+  const row = view.querySelector(".cr-list__intro .cr-subscribe")!;
+  expect(row.previousElementSibling?.classList.contains("cr-list__description")).toBe(true);
+  expect(row.querySelector(".cr-subscribe__label")?.textContent).toBe("Listen in your podcast app");
+  expect(Array.from(row.querySelectorAll("a:not(.cr-subscribe__more)"), (link) => link.textContent?.trim())).toEqual([
+    "Apple Podcasts", "Overcast", "Pocket Casts", "Spotify", "YouTube",
+  ]);
+  const more = row.querySelector(".cr-subscribe__more");
+  expect(more?.getAttribute("href")).toBe("/show/feed/");
+  expect(more?.textContent).toBe("More options");
+});
+
+it("labels the direct podcast feed RSS when the subscribe page is unavailable", async () => {
+  const view = await open("/show/", { feedUrl: "", subscribe: { ...subscription, feedPageUrl: "" } });
+  const rss = view.querySelector(".cr-subscribe__more");
+  expect(rss?.getAttribute("href")).toBe(subscription.podcastRssUrl);
+  expect(rss?.textContent).toBe("RSS");
+});
+
+it("uses Feeds in the header and footer for a written blog and leaves out the app row", async () => {
+  const view = await open("/show/", { subscribe: { ...subscription, isPodcast: false, platformLinks: [] } });
+  expect(view.querySelector(".cr-header__subscribe")?.textContent).toBe("Feeds");
+  expect(view.querySelector("footer nav a")?.textContent).toBe("Feeds");
+  expect(view.querySelector(".cr-subscribe")).toBeNull();
+});
+
+it("offers subscriptions after episode content and before comments", async () => {
+  const view = await open("/show/episode-one/", { subscribe: subscription });
+  const row = view.querySelector(".cr-subscribe--episode")!;
+  expect(row.querySelector(".cr-subscribe__label")?.textContent).toBe("Subscribe to Ground Loop");
+  expect(row.querySelector('a[href="https://example.org/apple"]')?.textContent?.trim()).toBe("Apple Podcasts");
+  expect(row.previousElementSibling?.textContent).toContain("The whole story");
+  expect(row.nextElementSibling?.textContent).toContain("Great episode.");
+});
+
+it.each([true, false])("leaves the episode subscription line off plain posts (podcast: %s)", async (isPodcast) => {
+  const view = await open("/show/notes/", { subscribe: { ...subscription, isPodcast } });
+  expect(view.querySelector("h1")?.textContent).toBe("Studio notes");
+  expect(view.querySelector(".cr-subscribe--episode")).toBeNull();
 });
 
 describe("post list", () => {

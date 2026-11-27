@@ -1,7 +1,17 @@
-{% load i18n %}
-<span class="cr-feed-link">
-  <a href="{{ url }}">{{ label }}</a>
-  <button type="button" class="cr-button cr-button--quiet" data-copy-feed hidden
-          aria-label="{% blocktranslate %}Copy {{ label }} link{% endblocktranslate %}"
-          data-copied="{% translate 'Copied' %}" data-copy-failed="{% translate 'Could not copy' %}">{% translate "Copy" %}</button>
-</span>
+{% load cast_react_tags i18n %}
+{% cast_react_absolute_link url as absolute_url %}
+{% if absolute_url %}
+  <div class="cr-feed-link{% if show_url %} cr-feed-link--primary{% endif %}">
+    {% if not show_url %}
+      <a class="cr-feed-open" href="{{ url }}"{% if feed_name %} aria-label="{{ feed_name }} {{ label }}"{% endif %}>{{ label }}</a>
+    {% endif %}
+    <input class="cr-feed-link__url" type="text" dir="ltr" readonly spellcheck="false"
+           aria-label="{% blocktranslate %}{{ feed_name }} {{ label }} feed URL{% endblocktranslate %}"
+           value="{{ absolute_url }}" data-feed-copy-url{% if not show_url %} hidden{% endif %}>
+    <button type="button" class="cr-button{% if not show_url %} cr-button--quiet{% endif %}" data-copy-feed hidden
+            aria-label="{% blocktranslate %}Copy {{ feed_name }} {{ label }} link{% endblocktranslate %}"
+            data-copied="{% translate 'Copied' %}"
+            data-selected="{% translate 'URL selected. Use your device’s copy command.' %}">{% translate "Copy" %}</button>
+    <span class="cr-feed-link__status cr-visually-hidden" role="status" data-feed-copy-status></span>
+  </div>
+{% endif %}

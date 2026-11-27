@@ -16,6 +16,7 @@ import { Comments } from "./Comments";
 import { ChevronLeftIcon } from "./icons";
 import { PostContent } from "./PostContent";
 import { knownPageTypes } from "./PostListPage";
+import { SubscribeLinks } from "./SubscribeLinks";
 
 export function PostDetailPage({
   config,
@@ -162,6 +163,7 @@ export function PostDetailPage({
             </>
           )}
         />
+        {post.meta.type === "cast.Episode" && <SubscribeLinks config={config} episode />}
         <Comments
           config={config}
           comments={post.comments ?? []}

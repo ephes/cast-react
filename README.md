@@ -21,6 +21,10 @@ What you get:
 - Each list row shows the post's overview with a **Read more** link. Post and
   episode pages show the overview and detail, with comments (including replies)
   and a lightbox for galleries.
+- Podcasts have a **Subscribe** link in the header and listening links on the
+  post list and on episodes. The subscribe page has podcast apps, a copyable
+  MP3 RSS URL, alternative audio formats, and RSS and Atom feeds for written
+  posts. Written blogs use **Feeds** and can show the same footer follow links.
 - An audio player made for this theme: the seek bar is divided into chapters,
   with a chapter list, a transcript you can search and that follows playback,
   playback speed, resume, and links that start at a given time (`?t=754`).
@@ -40,7 +44,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.6"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.8"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player
@@ -89,6 +93,17 @@ Set the theme to `react` in the Wagtail admin, for the complete site
 
 That's it. The blog index and its posts are now rendered by the React theme.
 
+## Subscription and follow links
+
+Use django-cast's `CAST_FOLLOW_LINKS` to set `apple_podcasts`, `spotify`, and
+`youtube` for podcast apps, and `mastodon`, `linkedin`, `github`, `bluesky`,
+and `email` for footer links. Set `email` to a `mailto:` URL or use the blog's
+contact email. Mastodon links include `rel="me"`. An Apple Podcasts URL
+whose path contains `/id<digits>` also supplies links for Overcast, Pocket
+Casts, and Castro. Django-Cast supplies the feed URLs. To add a Podlove
+subscribe button, override the `podlove_subscribe_button` block in
+`cast/react/feed_detail.html`.
+
 ## How it plugs into django-cast
 
 The theme is a set of templates in `cast_react/templates/cast/react/`, which
@@ -100,6 +115,9 @@ is how django-cast discovers themes.
   (`WAGTAILAPI_LIMIT_MAX`), the API URLs and the CSRF token. `blog_list_of_posts.html`, `post.html` and `episode.html`
   add the route (`PostList` or `PostDetail`), the post slug and the page type,
   and set title, description, canonical URL and social meta tags on the server.
+  The `cast-react-subscribe` JSON script supplies feed, podcast app, and follow
+  links. For the React header and footer, a non-empty `data-feed-url` in the
+  `reactjs-data` block takes precedence over the JSON feed page URL.
 - `post_body.html` is what the pages API returns as `html_overview` and
   `html_detail`. The app shows that HTML and reads date and author from the
   `data-` attributes the template adds.
@@ -112,7 +130,7 @@ is how django-cast discovers themes.
 - `page.html` provides the header, prose layout and a small `page.ts` Vite
   entry for Django-rendered pages. It shares styles and the saved appearance
   choice with the app. On phones, header links in custom `<ul>` lists scroll
-  horizontally in a single row. `feed_detail.html` lists listening services and feeds,
+  horizontally in a single row. `feed_detail.html` shows listening services and copyable feed links,
   `transcript.html` renders the full transcript, and `select_theme.html`
   renders the theme chooser partial for htmx.
 - A page that extends `cast/react/base.html` without a `blog` in its context

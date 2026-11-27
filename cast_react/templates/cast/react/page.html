@@ -1,6 +1,7 @@
-{% load django_vite i18n wagtailcore_tags %}
+{% load cast_react_tags django_vite i18n wagtailcore_tags %}
 {% get_current_language as current_language %}
 {% if blog %}{% pageurl blog as blog_url_for_request %}{% endif %}
+{% cast_react_subscribe as cr_subscribe %}
 <!DOCTYPE html>
 <html lang="{% firstof LANGUAGE_CODE current_language %}">
   <head>
@@ -28,9 +29,8 @@
       } catch {}
     </script>
     {% block feeds %}
-      {% firstof follow_links.rss blog_feed_url as rss_url %}
-      {% if rss_url %}
-        <link rel="alternate" type="application/rss+xml" title="{{ blog.title }}" href="{{ rss_url }}">
+      {% if cr_subscribe.blogRssUrl %}
+        <link rel="alternate" type="application/rss+xml" title="{{ blog.title }}" href="{{ cr_subscribe.blogRssUrl }}">
       {% endif %}
     {% endblock feeds %}
     {% block css %}{% endblock css %}
@@ -46,7 +46,7 @@
       {% translate "Start page" as start_page %}
       {% firstof blog.title current_site.site_name start_page as title_text %}
       <a class="cr-skip-link" href="#main-content">{% translate "Skip to content" %}</a>
-      {% include "./_page_header.html" %}
+      {% block page_header %}{% include "./_page_header.html" %}{% endblock page_header %}
       <main id="main-content" class="cr-main cr-prose cr-page-content" tabindex="-1"
             {% if theme_form %}data-current-theme="{{ template_base_dir }}" data-current-label="{% translate 'Current theme' %}"{% endif %}>
         {% block content %}{% endblock content %}

@@ -1,5 +1,25 @@
 // Reads what the Django template (cast/react/base.html) tells the app about the blog.
 
+const platformIcons = {
+  apple_podcasts: "podcast",
+  overcast: "headphones",
+  pocket_casts: "headphones",
+  spotify: "music",
+  youtube: "video",
+  castro: "headphones",
+} as const;
+
+type PlatformId = keyof typeof platformIcons;
+
+export interface Subscribe {
+  feedPageUrl: string;
+  isPodcast: boolean;
+  podcastRssUrl: string;
+  blogRssUrl: string;
+  platformLinks: { id: PlatformId; label: string; icon: (typeof platformIcons)[PlatformId]; url: string }[];
+  followLinks: { label: string; url: string; rel: string }[];
+}
+
 export interface Config {
   blogUrl: string;
   blogId: number;
@@ -17,11 +37,64 @@ export interface Config {
   themeListApiUrl: string;
   themeUpdateApiUrl: string;
   feedUrl: string;
+  subscribe: Subscribe | null;
   // Set in a Wagtail preview: the draft rendered by the server.
   preview: { title: string; html: string } | null;
   routeName: "PostList" | "PostDetail";
   postSlug: string;
   pageType: string;
+}
+
+function safeLink(value: unknown, allowMailto = false): string {
+  if (typeof value !== "string" || /[\s\\\x00-\x1f\x7f]/u.test(value)) return "";
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  try {
+    const url = new URL(value);
+    if ((url.protocol === "https:" || url.protocol === "http:") && /^https?:\/\/[^/]/i.test(value) && url.hostname) {
+      return value;
+    }
+    if (allowMailto && url.protocol === "mailto:" && url.pathname) return value;
+  } catch {
+    // Ignore an invalid URL in a template override.
+  }
+  return "";
+}
+
+function readSubscribe(doc: Document): Subscribe | null {
+  const script = doc.getElementById("cast-react-subscribe");
+  if (!script?.textContent) return null;
+  try {
+    const data = JSON.parse(script.textContent);
+    if (typeof data?.isPodcast !== "boolean") return null;
+    const platformLinks: Subscribe["platformLinks"] = [];
+    const followLinks: Subscribe["followLinks"] = [];
+    if (data.isPodcast && Array.isArray(data.platformLinks)) {
+      for (const link of data.platformLinks) {
+        if (typeof link?.id !== "string" || !Object.hasOwn(platformIcons, link.id) ||
+            typeof link.label !== "string" || !link.label.trim()) continue;
+        const id = link.id as PlatformId;
+        const url = safeLink(link.url);
+        if (url) platformLinks.push({ id, label: link.label, icon: platformIcons[id], url });
+      }
+    }
+    if (Array.isArray(data.followLinks)) {
+      for (const link of data.followLinks) {
+        if (typeof link?.label !== "string" || !link.label.trim()) continue;
+        const url = safeLink(link.url, true);
+        if (url) followLinks.push({ label: link.label, url, rel: link.rel === "me" ? "me" : "" });
+      }
+    }
+    return {
+      isPodcast: data.isPodcast,
+      feedPageUrl: safeLink(data.feedPageUrl),
+      podcastRssUrl: safeLink(data.podcastRssUrl),
+      blogRssUrl: safeLink(data.blogRssUrl),
+      platformLinks,
+      followLinks,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function readConfig(doc: Document = document): Config {
@@ -69,7 +142,8 @@ export function readConfig(doc: Document = document): Config {
     postCommentUrl: data.postCommentUrl ?? "/",
     themeListApiUrl: data.apiThemeListUrl ?? "",
     themeUpdateApiUrl: data.apiThemeUpdateUrl ?? "",
-    feedUrl: data.feedUrl ?? "",
+    feedUrl: safeLink(data.feedUrl),
+    subscribe: readSubscribe(doc),
     preview:
       preview instanceof HTMLTemplateElement
         ? { title: preview.dataset.title ?? "", html: preview.innerHTML }

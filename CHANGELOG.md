@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.8
+
+- Podcasts have a visible Subscribe link in the header and podcast app links
+  (Apple Podcasts, Overcast, Pocket Casts, Spotify, YouTube, More options) on
+  the post list and episode pages. Written blogs have a Feeds link in the header.
+- The feed page is a subscribe page: app buttons, the recommended MP3 feed
+  address with a copy button, the other formats, and the blog feeds. RSS and
+  Atom links work without JavaScript.
+- The footer shows configured follow links. Mastodon links support profile verification.
+- Blogs with Wagtail view restrictions hide feed and podcast app links.
+- A template's custom `data-feed-url` takes precedence in the React header and footer.
+
 ## 0.0.7
 
 - Dropdown arrows match the field text in light and dark mode and stay on the

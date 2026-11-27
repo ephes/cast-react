@@ -14,6 +14,7 @@ import { FILTER_KEYS } from "../types";
 import { FilterPanel } from "./FilterPanel";
 import { Pagination } from "./Pagination";
 import { PostContent } from "./PostContent";
+import { SubscribeLinks } from "./SubscribeLinks";
 
 // Page types seen in list answers, so the detail request can ask for the right type.
 export const knownPageTypes = new Map<string, string>();
@@ -124,6 +125,7 @@ export function PostListPage({ config, filters, page }: { config: Config; filter
         {config.blogDescriptionHtml && (
           <div className="cr-prose cr-list__description" dangerouslySetInnerHTML={{ __html: config.blogDescriptionHtml }} />
         )}
+        <SubscribeLinks config={config} />
       </div>
       <FilterPanel filters={filters} facetCounts={facets.data?.facet_counts ?? null} onChange={changeFilters} />
       <section className="cr-list__posts" aria-label="Posts" aria-busy={posts.loading}>

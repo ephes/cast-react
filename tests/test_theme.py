@@ -1,6 +1,7 @@
 import json
 import re
 from html import unescape
+from types import SimpleNamespace
 
 import pytest
 from cast import devdata
@@ -8,12 +9,13 @@ from cast.models import Audio, Blog, ChapterMark, Episode
 from cast.models.theme import get_required_template_names, get_template_base_dir_choices
 from django.apps import apps
 from django.http import HttpResponse
-from django.template import engines
+from django.template import Context, engines
 from django.template.loader import get_template, render_to_string
 from django.urls import include, path, reverse
-from wagtail.models import Site
+from wagtail.models import PageViewRestriction, Site
 
 import cast_react
+from cast_react.templatetags.cast_react_tags import cast_react_subscribe
 
 THEME = "react"
 
@@ -43,6 +45,12 @@ def configuration(html: str) -> dict[str, str]:
     tag = re.search(r'<script id="cast-react-configuration"[^>]*>', html, re.DOTALL)
     assert tag is not None, "configuration element missing"
     return dict(re.findall(r'data-([a-z-]+)="([^"]*)"', tag.group(0)))
+
+
+def subscribe_json(html: str) -> dict:
+    script = re.search(r'<script id="cast-react-subscribe" type="application/json">(.*?)</script>', html, re.DOTALL)
+    assert script is not None, "subscription configuration missing"
+    return json.loads(script[1])
 
 
 def test_app_config():
@@ -83,6 +91,10 @@ def test_blog_index_configures_the_app(client, podcast):
     assert int(data["pagination-page-size"]) > 0
     assert '<div id="app"></div>' in html
     assert '<template id="cast-react-blog-description"><p>About the <b>show</b></p></template>' in html
+    feed_page = reverse("cast:feed_detail", kwargs={"slug": blog.slug})
+    assert data["feed-url"] == feed_page
+    assert subscribe_json(html)["feedPageUrl"] == f"http://testserver{feed_page}"
+    assert subscribe_json(html)["isPodcast"] is True
     # The production bundle from the committed manifest.
     assert re.search(r'src="/static/cast_react/main-[\w-]+\.js"', html)
     assert re.search(r'href="/static/cast_react/main-[\w-]+\.css"', html)
@@ -100,6 +112,92 @@ def test_episode_page_configures_the_detail_route(client, podcast):
     assert f"<title>{episode.title}</title>" in html
     assert 'rel="canonical"' in html
     assert 'property="og:audio"' in html
+    assert subscribe_json(html)["isPodcast"] is True
+
+
+@pytest.mark.parametrize("inherited", [False, True])
+def test_restricted_podcast_hides_subscription_links(client, podcast, settings, inherited):
+    blog, episode, _audio = podcast
+    PageViewRestriction.objects.create(
+        page=blog.get_parent() if inherited else blog, restriction_type=PageViewRestriction.LOGIN
+    )
+    settings.CAST_FOLLOW_LINKS = {
+        "apple_podcasts": "https://podcasts.apple.com/us/podcast/demo/id1234",
+        "mastodon": "https://social.example/@show",
+    }
+    client.force_login(blog.owner)
+
+    for url in (blog.url, episode.url):
+        response = client.get(url)
+        assert response.status_code == 200
+        html = response.content.decode()
+        assert configuration(html)["feed-url"] == ""
+        data = subscribe_json(html)
+        assert data["feedPageUrl"] == data["podcastRssUrl"] == data["blogRssUrl"] == ""
+        assert data["platformLinks"] == []
+        assert data["followLinks"] == [{"label": "Mastodon", "url": "https://social.example/@show", "rel": "me"}]
+        assert 'type="application/rss+xml"' not in html
+
+    for name, kwargs in (
+        ("feed_detail", {}),
+        ("latest_entries_feed", {}),
+        ("podcast_feed_rss", {"audio_format": "mp3"}),
+    ):
+        url = reverse(f"cast:{name}", kwargs={"slug": blog.slug, **kwargs})
+        assert client.get(url).status_code == 404
+
+
+def test_subscribe_tag_uses_the_specific_podcast_and_derives_apps(rf, podcast):
+    blog, _, _ = podcast
+    request = rf.get("/preview/?theme=react", secure=True)
+    data = cast_react_subscribe(
+        Context(
+            {
+                "blog": Blog.objects.get(pk=blog.pk),
+                "request": request,
+                "follow_links": {
+                    "spotify": "javascript:alert(1)",
+                    "youtube": "//untrusted.example/youtube",
+                    "mastodon": "https://social.example/@show",
+                    "github": "https://[bad",
+                    "bluesky": "/bad path",
+                    "linkedin": "mailto:placeholder@example.org",
+                    "email": "mailto:host@example.org",
+                },
+                "apple_podcasts_url": "https://podcasts.apple.com/us/podcast/demo/id1234?i=5678",
+                "spotify_url": "/listen/",
+            }
+        )
+    )
+    assert data["isPodcast"] is True
+    feed_page = reverse("cast:feed_detail", kwargs={"slug": blog.slug})
+    assert data["feedPageUrl"] == f"https://testserver{feed_page}?theme=react"
+    rss = reverse("cast:podcast_feed_rss", kwargs={"slug": blog.slug, "audio_format": "mp3"})
+    assert data["podcastRssUrl"] == f"https://testserver{rss}"
+    assert {link["id"]: link["url"] for link in data["platformLinks"]} == {
+        "apple_podcasts": "https://podcasts.apple.com/us/podcast/demo/id1234?i=5678",
+        "overcast": "https://overcast.fm/itunes1234",
+        "pocket_casts": "https://pca.st/itunes/1234",
+        "spotify": "https://testserver/listen/",
+        "castro": "https://castro.fm/itunes/1234",
+    }
+    assert data["followLinks"] == [
+        {"label": "Mastodon", "url": "https://social.example/@show", "rel": "me"},
+        {"label": "E-mail", "url": "mailto:host@example.org", "rel": ""},
+    ]
+
+
+@pytest.mark.parametrize("path", ["/show?target=/id1234", "/show/notid1234", "/show/id1234-extra"])
+def test_subscribe_tag_requires_an_apple_id_path_segment(path):
+    data = cast_react_subscribe(
+        Context(
+            {
+                "blog": SimpleNamespace(is_podcast=True),
+                "follow_links": {"apple_podcasts": f"https://podcasts.apple.com{path}"},
+            }
+        )
+    )
+    assert [link["id"] for link in data["platformLinks"]] == ["apple_podcasts"]
 
 
 def api_item(client, blog: Blog, **params) -> dict:
@@ -306,23 +404,91 @@ def rendered_page(response) -> str:
 
 def test_feed_detail_uses_the_page_layout(client, podcast, settings):
     blog, _episode, _audio = podcast
-    settings.CAST_FOLLOW_LINKS = {"spotify": "https://example.org/listen"}
+    blog.email = "host@example.org"
+    blog.save()
+    settings.CAST_FOLLOW_LINKS = {
+        "apple_podcasts": "https://podcasts.apple.com/us/podcast/demo/id1234",
+        "spotify": "https://example.org/listen",
+        "youtube": "https://www.youtube.com/@show",
+        "mastodon": "https://social.example/@show",
+        "linkedin": "https://www.linkedin.com/in/show/",
+        "github": "https://github.com/show",
+        "bluesky": "https://bsky.app/profile/show.example",
+    }
     url = reverse("cast:feed_detail", kwargs={"slug": blog.slug})
     response = client.get(url)
     html = rendered_page(response)
     assert response.templates[0].name == "cast/react/feed_detail.html"
     assert f"<title>Subscribe – {blog.title}</title>" in html
+    assert "<h1>Subscribe</h1>" in html
+    assert "<p>About the <b>show</b></p>" in html
     assert f'class="cr-header__title" href="{blog.url}"' in html
-    rss_url = reverse("cast:latest_entries_feed", kwargs={"slug": blog.slug})
-    atom_url = reverse("cast:latest_entries_atom_feed", kwargs={"slug": blog.slug})
-    assert re.search(rf'<div class="cr-header__actions">\s*<a class="cr-icon-button" href="{rss_url}"', html)
-    assert "Where to listen" in html
-    assert '<a href="https://example.org/listen">Spotify</a>' in html
-    assert f'<a href="{rss_url}">RSS</a>' in html
-    assert f'<a href="{atom_url}">Atom</a>' in html
-    assert '<dl class="cr-podcast-feeds">' in html
-    assert "<dt>MP3</dt>" in html
-    assert "data-copy-feed" in html
+    assert f'class="cr-button cr-header__subscribe" href="http://testserver{url}" aria-current="page"' in html
+    assert "Listen in your podcast app" in html
+    assert 'href="https://example.org/listen"' in html
+    assert 'href="https://castro.fm/itunes/1234"' in html
+    assert "Use the feed in any other app" in html
+    assert "MP3 (recommended)" in html
+    assert '<h3 class="cr-feed-other-heading">Other formats</h3>' in html
+    assert "Blog feeds" in html
+    assert html.count("data-copy-feed hidden") == 10
+    for name in ["latest_entries_feed", "latest_entries_atom_feed"]:
+        feed = reverse(f"cast:{name}", kwargs={"slug": blog.slug})
+        assert f'href="{feed}"' in html
+    for audio_format in ["mp3", "m4a", "oga", "opus"]:
+        for kind in ["rss", "atom"]:
+            feed = reverse(f"cast:podcast_feed_{kind}", kwargs={"slug": blog.slug, "audio_format": audio_format})
+            assert f'href="{feed}"' in html
+            assert f'value="http://testserver{feed}"' in html
+    assert re.search(r'aria-label="MP3 RSS feed URL"\s+value="http://testserver[^"]+" data-feed-copy-url>', html)
+
+    footer = re.search(r'<nav class="cr-footer__links"[^>]*>(.*?)</nav>', html, re.DOTALL)
+    assert footer is not None
+    assert f'<a href="http://testserver{url}">Subscribe</a>' in footer[1]
+    assert '<a href="https://social.example/@show" rel="me">Mastodon</a>' in footer[1]
+    assert '<a href="mailto:host@example.org">E-mail</a>' in footer[1]
+    for key in ("linkedin", "github", "bluesky"):
+        assert f'href="{settings.CAST_FOLLOW_LINKS[key]}"' in footer[1]
+    assert 'href="https://example.org/listen"' not in footer[1]
+
+
+def test_feed_page_keeps_the_podlove_override(podcast, rf):
+    blog, _, _ = podcast
+    template = engines["django"].from_string(
+        '{% extends "cast/react/feed_detail.html" %}'
+        '{% block podlove_subscribe_button %}<button type="button">Podlove subscribe</button>{% endblock %}'
+    )
+    html = template.render({"blog": blog, "is_podcast": True}, rf.get("/"))
+    assert '<button type="button">Podlove subscribe</button>' in html
+
+
+def test_written_blog_has_feeds_without_podcast_apps(client, db):
+    blog = devdata.create_blog(site=Site.objects.get(is_default_site=True))
+    blog.template_base_dir = THEME
+    blog.description = "<p>A collection of articles.</p>"
+    blog.save()
+
+    listing = client.get(blog.url)
+    assert listing.status_code == 200
+    data = subscribe_json(listing.content.decode())
+    assert data["isPodcast"] is False
+    assert data["platformLinks"] == []
+    assert data["podcastRssUrl"] == ""
+
+    feed_page = reverse("cast:feed_detail", kwargs={"slug": blog.slug})
+    html = rendered_page(client.get(feed_page))
+    assert f"<title>Feeds – {blog.title}</title>" in html
+    assert "<h1>Feeds</h1>" in html
+    assert "<p>A collection of articles.</p>" in html
+    assert f'class="cr-button cr-header__subscribe" href="http://testserver{feed_page}" aria-current="page"' in html
+    assert "A feed reader collects new posts" in html
+    assert "MP3" not in html
+    assert "Listen in your podcast app" not in html
+    assert html.count("data-copy-feed hidden") == 2
+    assert re.search(r'aria-label="Blog RSS feed URL"\s+value="http://testserver[^"]+" data-feed-copy-url>', html)
+    for name in ["latest_entries_feed", "latest_entries_atom_feed"]:
+        feed = reverse(f"cast:{name}", kwargs={"slug": blog.slug})
+        assert f'href="{feed}"' in html
 
 
 def test_server_footer_theme_select_has_a_label_and_returns_to_the_page(client, podcast):

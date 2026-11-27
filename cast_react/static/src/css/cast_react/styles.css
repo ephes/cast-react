@@ -95,7 +95,7 @@ noscript p {
   gap: 1.5rem;
 }
 
-.cr-list__intro {
+.cr-list__intro > :not(.cr-subscribe) {
   max-width: var(--cr-measure);
 }
 
@@ -115,6 +115,46 @@ noscript p {
 .cr-list__description {
   margin-top: 0.75rem;
   color: var(--cr-muted);
+}
+
+.cr-subscribe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+  margin-top: 1rem;
+}
+
+.cr-subscribe__label {
+  color: var(--cr-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cr-subscribe__more {
+  color: var(--cr-accent);
+}
+
+.cr-detail__body > .cr-subscribe--episode {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cr-line);
+}
+
+@media (max-width: 35rem) {
+  .cr-subscribe__label {
+    flex-basis: 100%;
+  }
+
+  .cr-subscribe__links > .cr-subscribe-app:nth-child(n+4):not(.cr-subscribe__more) {
+    display: none;
+  }
+
+  .cr-subscribe .cr-subscribe-app {
+    min-height: 2.5rem;
+  }
 }
 
 .cr-list__summary {

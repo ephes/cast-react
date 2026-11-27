@@ -8,6 +8,62 @@ function page(attributes: string, extra = ""): Document {
 }
 
 describe("readConfig", () => {
+  function withSubscribe(payload: string) {
+    return readConfig(page(
+      'data-blog-id="1" data-feed-url="/legacy-feed/"',
+      `<script id="cast-react-subscribe" type="application/json">${payload}</script>`,
+    ));
+  }
+
+  it("reads subscription JSON and drops invalid links", () => {
+    const config = withSubscribe(JSON.stringify({
+      isPodcast: true,
+      feedPageUrl: "/show/feed/",
+      podcastRssUrl: "https://podcast.example.org/show/feed/podcast/mp3/rss.xml",
+      blogRssUrl: "//other.example.org/rss.xml",
+      platformLinks: [
+        { id: "apple_podcasts", label: "Apple Podcasts", url: "https://podcast.example.org/apple" },
+        { id: "spotify", label: "Spotify", url: "javascript:alert(1)" },
+        { id: "youtube", label: "YouTube", url: "https://[bad" },
+        { id: "overcast", label: "Overcast", url: "/\\bad.example.org" },
+        { id: "pocket_casts", label: "Pocket Casts", url: "mailto:hello@example.org" },
+        { id: "constructor", label: "Invalid", url: "/platform/" },
+        null,
+      ],
+      followLinks: [
+        { label: "Mastodon", url: "https://social.example.org/@groundloop", rel: "me" },
+        { label: "E-mail", url: "mailto:hello@example.org" },
+        { label: "GitHub", url: "data:text/html,test" },
+        { label: "Bluesky", url: "/bad path" },
+        { label: "Other", url: 100 },
+      ],
+    }));
+    expect(config.feedUrl).toBe("/legacy-feed/");
+    expect(config.subscribe).toEqual({
+      isPodcast: true,
+      feedPageUrl: "/show/feed/",
+      podcastRssUrl: "https://podcast.example.org/show/feed/podcast/mp3/rss.xml",
+      blogRssUrl: "",
+      platformLinks: [{ id: "apple_podcasts", label: "Apple Podcasts", icon: "podcast", url: "https://podcast.example.org/apple" }],
+      followLinks: [
+        { label: "Mastodon", url: "https://social.example.org/@groundloop", rel: "me" },
+        { label: "E-mail", url: "mailto:hello@example.org", rel: "" },
+      ],
+    });
+  });
+
+  it("keeps the legacy feed URL without subscription JSON", () => {
+    const config = readConfig(page('data-blog-id="1" data-feed-url="/legacy-feed/"'));
+    expect(config.subscribe).toBeNull();
+    expect(config.feedUrl).toBe("/legacy-feed/");
+  });
+
+  it.each(["{invalid", "null", "[]", '{"isPodcast":"true"}'])("keeps the legacy feed for invalid JSON data (%s)", (payload) => {
+    const config = withSubscribe(payload);
+    expect(config.subscribe).toBeNull();
+    expect(config.feedUrl).toBe("/legacy-feed/");
+  });
+
   it("reads the values the template provides", () => {
     const doc = page(
       `data-blog-url="/show" data-blog-id="3" data-blog-title="Ground Loop" data-pagination-page-size="7" data-api-limit-max="30"

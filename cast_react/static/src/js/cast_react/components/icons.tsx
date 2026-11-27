@@ -25,6 +25,37 @@ function Icon({ children, size = 20, filled = false }: { children: ReactNode; si
 
 type IconProps = { size?: number };
 
+export const PodcastIcon = ({ size }: IconProps) => (
+  <Icon size={size}>
+    <path d="M6 15a8 8 0 1 1 12 0M8.5 12.5a4.5 4.5 0 0 1-.8-2.5 4.3 4.3 0 0 1 8.6 0 4.5 4.5 0 0 1-.8 2.5" />
+    <circle cx="12" cy="10" r="1" fill="currentColor" />
+    <path d="M10 16a2 2 0 0 1 4 0l-.7 4h-2.6z" />
+  </Icon>
+);
+
+export const HeadphonesIcon = ({ size }: IconProps) => (
+  <Icon size={size}>
+    <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+    <rect x="4" y="13" width="4" height="6" rx="1" />
+    <rect x="16" y="13" width="4" height="6" rx="1" />
+  </Icon>
+);
+
+export const MusicIcon = ({ size }: IconProps) => (
+  <Icon size={size}>
+    <path d="M9 17V6l10-2v11M9 9l10-2" />
+    <ellipse cx="6.5" cy="17.5" rx="2.5" ry="1.5" />
+    <ellipse cx="16.5" cy="15.5" rx="2.5" ry="1.5" />
+  </Icon>
+);
+
+export const VideoIcon = ({ size }: IconProps) => (
+  <Icon size={size}>
+    <rect x="3" y="5.5" width="18" height="13" rx="3" />
+    <path d="m10 9 5 3-5 3z" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
 export const PlayIcon = ({ size }: IconProps) => (
   <Icon size={size} filled>
     <path d="M8 5.2v13.6a.8.8 0 0 0 1.22.68l10.9-6.8a.8.8 0 0 0 0-1.36L9.22 4.52A.8.8 0 0 0 8 5.2z" />

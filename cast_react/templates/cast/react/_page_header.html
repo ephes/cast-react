@@ -4,7 +4,7 @@
 {% else %}
   {% firstof request.META.SCRIPT_NAME|add:'/' '/' as title_url %}
 {% endif %}
-{% firstof follow_links.feed_detail follow_links.rss blog_feed_url as feed_url %}
+{% firstof cr_subscribe.feedPageUrl cr_subscribe.blogRssUrl as feed_url %}
 <header class="cr-header">
   <div class="cr-header__inner">
     <a class="cr-header__title" href="{{ title_url }}">{{ title_text }}</a>
@@ -16,11 +16,9 @@
       </nav>
       <div class="cr-header__actions">
         {% if feed_url %}
-          <a class="cr-icon-button" href="{{ feed_url }}" aria-label="{% translate 'Feeds' %}" title="{% translate 'Feeds' %}">
-            <svg class="cr-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false">
-              <path d="M5 11a8 8 0 0 1 8 8M5 5a14 14 0 0 1 14 14" />
-              <circle cx="6" cy="18" r="1.2" fill="currentColor" />
-            </svg>
+          <a class="cr-button cr-header__subscribe" href="{{ feed_url }}"{% if feed_is_current %} aria-current="page"{% endif %}>
+            {% include "./_subscribe_icon.html" with icon="rss" only %}
+            {% if cr_subscribe.isPodcast %}{% translate "Subscribe" %}{% else %}{% translate "Feeds" %}{% endif %}
           </a>
         {% endif %}
         <button type="button" class="cr-icon-button" data-appearance hidden>

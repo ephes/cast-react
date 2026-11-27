@@ -3,7 +3,20 @@
 {% cast_react_is_theme_chooser as is_theme_chooser %}
 <footer class="cr-footer">
   <div class="cr-footer__inner">
-    <p>{{ title_text }}</p>
+    <div class="cr-footer__site">
+      <p>{{ title_text }}</p>
+      {% firstof cr_subscribe.feedPageUrl cr_subscribe.blogRssUrl as feed_url %}
+      {% if feed_url or cr_subscribe.followLinks %}
+        <nav class="cr-footer__links" aria-label="{% translate 'Follow' %}">
+          {% if feed_url %}
+            <a href="{{ feed_url }}">{% if cr_subscribe.isPodcast %}{% translate "Subscribe" %}{% else %}{% translate "Feeds" %}{% endif %}</a>
+          {% endif %}
+          {% for link in cr_subscribe.followLinks %}
+            <a href="{{ link.url }}"{% if link.rel %} rel="{{ link.rel }}"{% endif %}>{{ link.label }}</a>
+          {% endfor %}
+        </nav>
+      {% endif %}
+    </div>
     {% if request and not is_theme_chooser and select_theme_url and template_base_dir_choices|length > 1 %}
       {% cast_react_selected_theme template_base_dir_choices template_base_dir request.session.template_base_dir as selected_theme %}
       <form class="cr-theme-select" action="{{ select_theme_url }}" method="post">

@@ -88,6 +88,15 @@ CAST_COMMENTS_ENABLED = True
 # Optional: the name shown for the theme in django-cast's theme chooser.
 CAST_CUSTOM_THEMES = [("react", "React")]
 
+# Fictional destinations for the demo podcast.
+CAST_FOLLOW_LINKS = {
+    "apple_podcasts": "https://podcasts.apple.com/us/podcast/ground-loop-demo/id1234567890",
+    "spotify": "https://open.spotify.com/show/0000000000000000000000",
+    "youtube": "https://www.youtube.com/@ground-loop-demo",
+    "mastodon": "https://mastodon.example/@groundloop",
+    "linkedin": "https://www.linkedin.com/company/ground-loop-demo/",
+}
+
 # django-vite: CAST_REACT_VITE_DEV_MODE=1 uses the Vite dev server (`just js-dev`),
 # otherwise the committed production bundle in cast_react/static/cast_react/.
 _vite_dev_mode = os.environ.get("CAST_REACT_VITE_DEV_MODE", "0") == "1"

@@ -30,9 +30,10 @@
               data-post-comment-url="{{ blog.comment_post_url }}"
               data-api-theme-list-url="{{ blog.theme_list_api_url }}"
               data-api-theme-update-url="{{ blog.theme_update_api_url }}"
-              data-feed-url="{{ follow_links.feed_detail|default:follow_links.rss|default:'' }}"
+              data-feed-url="{{ cr_subscribe.legacyFeedUrl }}"
             {% endblock reactjs-data %}
     ></script>
+    {{ cr_subscribe|json_script:"cast-react-subscribe" }}
     <template id="cast-react-blog-description">{{ blog.description|richtext }}</template>
     <template id="cast-react-navigation">
       {% for url, text in root_nav_links %}<a href="{{ url }}">{{ text }}</a>{% endfor %}
@@ -42,7 +43,7 @@
       <noscript>
         <p>
           <strong>{{ blog.title }}</strong> needs JavaScript to show its posts.
-          {% if follow_links.rss %}You can also read it in a <a href="{{ follow_links.rss }}">feed reader</a>.{% endif %}
+          {% if cr_subscribe.blogRssUrl %}You can also read it in a <a href="{{ cr_subscribe.blogRssUrl }}">feed reader</a>.{% endif %}
         </p>
       </noscript>
     {% endblock main %}

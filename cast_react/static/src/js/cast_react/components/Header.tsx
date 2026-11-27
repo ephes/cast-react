@@ -33,6 +33,8 @@ function ColorSchemeButton() {
 }
 
 export function Header({ config }: { config: Config }) {
+  const feedUrl = config.feedUrl || config.subscribe?.feedPageUrl || config.subscribe?.blogRssUrl;
+  const feedLabel = config.subscribe?.isPodcast ? "Subscribe" : "Feeds";
   return (
     <header className="cr-header">
       <div className="cr-header__inner">
@@ -51,9 +53,15 @@ export function Header({ config }: { config: Config }) {
               ))}
           </nav>
           <div className="cr-header__actions">
-            {config.feedUrl && (
-              <a className="cr-icon-button" href={config.feedUrl} aria-label="Feeds" title="Feeds">
-                <FeedIcon />
+            {feedUrl && (
+              <a
+                className={config.subscribe ? "cr-button cr-header__subscribe" : "cr-icon-button"}
+                href={feedUrl}
+                aria-label={config.subscribe ? undefined : feedLabel}
+                title={config.subscribe ? undefined : feedLabel}
+              >
+                <FeedIcon size={config.subscribe ? 16 : undefined} />
+                {config.subscribe && feedLabel}
               </a>
             )}
             <ColorSchemeButton />
@@ -139,10 +147,22 @@ function ThemeSelect({ config }: { config: Config }) {
 }
 
 export function Footer({ config }: { config: Config }) {
+  const { subscribe } = config;
+  const feedUrl = config.feedUrl || subscribe?.feedPageUrl || subscribe?.blogRssUrl;
   return (
     <footer className="cr-footer">
       <div className="cr-footer__inner">
-        <p>{config.blogTitle}</p>
+        <div className="cr-footer__site">
+          <p>{config.blogTitle}</p>
+          {subscribe && (feedUrl || subscribe.followLinks.length > 0) && (
+            <nav className="cr-footer__links" aria-label="Follow">
+              {feedUrl && <a href={feedUrl}>{subscribe.isPodcast ? "Subscribe" : "Feeds"}</a>}
+              {subscribe.followLinks.map((link) => (
+                <a key={link.label} href={link.url} rel={link.rel || undefined}>{link.label}</a>
+              ))}
+            </nav>
+          )}
+        </div>
         <ThemeSelect config={config} />
       </div>
     </footer>
