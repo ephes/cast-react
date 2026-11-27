@@ -158,7 +158,7 @@ function shareUrl(track: PlayerPayload, seconds: number, secondary: boolean): st
   } else {
     url.searchParams.delete("audio");
   }
-  if (seconds >= 1) {
+  if (seconds >= 1 || secondary) {
     url.searchParams.set("t", String(Math.floor(seconds)));
   } else {
     url.searchParams.delete("t");

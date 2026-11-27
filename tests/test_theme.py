@@ -209,9 +209,9 @@ def test_example_media_view_answers_range_requests(rf, podcast):
     content = b"".join(whole.streaming_content)
     part = get("bytes=2-5")
     assert part.status_code == 206
-    assert part.content == content[2:6]
+    assert b"".join(part.streaming_content) == content[2:6]
     assert part["Content-Range"] == f"bytes 2-5/{len(content)}"
-    assert get("bytes=-3").content == content[-3:]
+    assert b"".join(get("bytes=-3").streaming_content) == content[-3:]
     assert get(f"bytes={len(content)}-").status_code == 416
     with pytest.raises(Http404):
         get(path="../settings.py")

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { facetCountsUrl, postListUrl } from "../api";
 import type { Config } from "../config";
 import { MiniPlayer } from "../player/MiniPlayer";
-import { listHref as buildListHref, parseRoute, useHref } from "../router";
+import { type Route, listHref as buildListHref, parseRoute, useHref } from "../router";
 import type { Filters } from "../types";
 import { Footer, Header } from "./Header";
 import { PostDetailPage } from "./PostDetailPage";
@@ -10,7 +10,13 @@ import { PostListPage } from "./PostListPage";
 
 export function App({ config }: { config: Config }) {
   const href = useHref();
-  const route = parseRoute(href, config.blogUrl);
+  // Wagtail serves a preview at an admin address, which is not one of the
+  // blog's routes: there the page shows the draft it was given.
+  const firstHref = useRef(href);
+  const showsPreview = config.preview !== null && href === firstHref.current;
+  const route: Route = showsPreview
+    ? { name: "PostDetail", slug: config.postSlug }
+    : parseRoute(href, config.blogUrl);
   // "All posts" on a post page leads back to the list as the reader left it.
   const lastList = useRef<{ filters: Filters; page: number }>({ filters: {}, page: 1 });
   if (route.name === "PostList") {

@@ -17,3 +17,5 @@ First version of the React theme for django-cast.
   episode playing while you browse.
 - Comments with replies, gallery lightbox, light and dark appearance, theme
   chooser.
+- Post previews in the Wagtail admin show the draft.
+- Needs django-cast 0.2.62 or newer.

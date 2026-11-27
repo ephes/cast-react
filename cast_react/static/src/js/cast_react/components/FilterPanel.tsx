@@ -51,7 +51,7 @@ function FacetGroup({
                 type="button"
                 className="cr-facet"
                 aria-pressed={active}
-                onClick={() => onSelect(active ? "" : facet.slug)}
+                onClick={() => onSelect(facet.slug)}
               >
                 <span>{label(facet)}</span>
                 <span className="cr-facet__count" aria-label={`${facet.count} posts`}>
@@ -92,6 +92,8 @@ export function FilterPanel({
     // Back and forward abandon a change that was still waiting for its posts.
     const forget = () => {
       pending.current = null;
+      window.clearTimeout(timer.current);
+      setSearch(latest.current.filters.search ?? "");
     };
     window.addEventListener("popstate", forget);
     return () => window.removeEventListener("popstate", forget);
@@ -115,6 +117,13 @@ export function FilterPanel({
     }
     pending.current = next;
     latest.current.onChange(next, typing);
+  };
+
+  // Choosing the selected value of a group again removes it. "Selected" includes
+  // a choice that is still on its way into the address.
+  const toggle = (key: FilterKey, slug: string) => {
+    const current = (pending.current ?? latest.current.filters)[key] ?? "";
+    set(key, current === slug ? "" : slug);
   };
 
   const typeSearch = (value: string) => {
@@ -161,20 +170,20 @@ export function FilterPanel({
           title="Categories"
           facets={facetCounts?.category_facets}
           selected={filters.category_facets ?? ""}
-          onSelect={(slug) => set("category_facets", slug)}
+          onSelect={(slug) => toggle("category_facets", slug)}
         />
         <FacetGroup
           title="Tags"
           facets={facetCounts?.tag_facets}
           selected={filters.tag_facets ?? ""}
-          onSelect={(slug) => set("tag_facets", slug)}
+          onSelect={(slug) => toggle("tag_facets", slug)}
         />
         <FacetGroup
           title="Months"
           facets={facetCounts?.date_facets}
           selected={filters.date_facets ?? ""}
           label={(facet) => monthName(facet.slug)}
-          onSelect={(slug) => set("date_facets", slug)}
+          onSelect={(slug) => toggle("date_facets", slug)}
         />
         <fieldset className="cr-filters__dates">
           <legend>Published</legend>

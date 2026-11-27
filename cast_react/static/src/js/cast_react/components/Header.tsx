@@ -111,7 +111,15 @@ function ThemeSelect({ config }: { config: Config }) {
       if (!response.ok) {
         throw new Error(String(response.status));
       }
-      window.location.reload();
+      // Leave a temporary `?theme=` preview, or it would keep showing this theme.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("theme");
+      url.searchParams.delete("template_base_dir");
+      if (url.href === window.location.href) {
+        window.location.reload();
+      } else {
+        window.location.assign(url.href);
+      }
     } catch {
       setError("The theme could not be changed. Reload the page and choose again.");
     }

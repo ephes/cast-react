@@ -108,9 +108,11 @@ the comment post URL (`comments-post-comment-ajax`).
 - The list asks the API for one page of posts at a time. Wagtail's API
   refuses more than `WAGTAILAPI_LIMIT_MAX` posts per request (20 unless you
   change it), so the theme shows at most 20 posts per page even when
-  django-cast's page size is larger.
+  django-cast's page size is larger. If you set `WAGTAILAPI_LIMIT_MAX` below
+  django-cast's page size, the list cannot load: keep it at or above the page
+  size.
 - A post preview in the Wagtail admin shows the draft's body and player, but
-  no comments.
+  no comments, and no player for an episode that has never been saved.
 - Addresses directly below the blog (`<blog>/<slug>/`) are treated as posts.
 - The transcript page (`transcript.html`) and the feed page
   (`feed_detail.html`) fall back to django-cast's plain templates.

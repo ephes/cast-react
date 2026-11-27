@@ -69,7 +69,15 @@ function CommentForm({
     const age = Date.now() / 1000 - Number(security.timestamp);
     if (refreshSecurity && (!Number.isFinite(age) || age > SECURITY_MAX_AGE_SECONDS)) {
       try {
-        signature = (await refreshSecurity()) ?? security;
+        const fresh = await refreshSecurity();
+        // Only a signature for the same post may replace the one of this form.
+        if (
+          fresh &&
+          fresh.content_type === security.content_type &&
+          String(fresh.object_pk) === String(security.object_pk)
+        ) {
+          signature = fresh;
+        }
       } catch {
         // Send with the signature at hand; the server decides.
       }

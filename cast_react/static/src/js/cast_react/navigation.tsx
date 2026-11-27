@@ -15,10 +15,16 @@ export function go(href: string, prefetch: string[] = [], options: { replace?: b
   const ticket = navigationCounter;
   const change = () => {
     // A newer navigation started while this one waited for its data.
-    if (ticket === navigationCounter) {
-      document.documentElement.classList.remove("cr-navigating");
-      withViewTransition(() => navigate(href, options));
+    if (ticket !== navigationCounter) {
+      return;
     }
+    document.documentElement.classList.remove("cr-navigating");
+    withViewTransition(() => {
+      // The browser may run this a moment later; Back may have happened in between.
+      if (ticket === navigationCounter) {
+        navigate(href, options);
+      }
+    });
   };
   if (prefetch.length === 0) {
     change();

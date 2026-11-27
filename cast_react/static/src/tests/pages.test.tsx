@@ -206,6 +206,18 @@ describe("post list", () => {
     expect(view.querySelectorAll(".cr-post-row")).toHaveLength(2);
   });
 
+  it("removes a filter that is chosen twice in quick succession", async () => {
+    const view = await open("/show/");
+    const audio = Array.from(view.querySelectorAll(".cr-facet")).find((button) =>
+      button.textContent?.startsWith("Audio"),
+    );
+    await click(audio ?? null);
+    await click(audio ?? null);
+    await settle();
+    await settle();
+    expect(window.location.search).toBe("");
+  });
+
   it("reads filters from the address", async () => {
     await open("/show/?search=room&date_after=2026-01-01&o=visible_date&page=2");
     const list = requests.find((url) => url.pathname === "/cast/api/wagtail/pages/");
@@ -316,7 +328,8 @@ describe("post page", () => {
   });
 
   it("shows the draft of a Wagtail preview without asking the API for the post", async () => {
-    window.history.replaceState(null, "", "/show/draft/");
+    // Wagtail serves previews at an admin address, not at the post's own.
+    window.history.replaceState(null, "", "/cms/pages/42/edit/preview/");
     const preview = { title: "Unpublished draft", html: body("Not saved yet", playerMarkup) };
     const view = await render(
       <App config={{ ...config, routeName: "PostDetail", postSlug: "draft", pageType: "cast.Episode", preview }} />,
