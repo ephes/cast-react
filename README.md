@@ -26,8 +26,8 @@ What you get:
 pip install cast-react
 ```
 
-`cast-react` needs `django-cast` 0.2.59 or newer (it uses django-cast's player
-payload and transcript endpoint).
+`cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player
+payload, transcript endpoint and social meta include).
 
 ### 2. Add entries to INSTALLED_APPS
 
@@ -105,6 +105,12 @@ the comment post URL (`comments-post-comment-ajax`).
 - Posts are rendered in the browser. Without JavaScript the page shows the
   blog title and a link to the feed; search engines that do not run
   JavaScript see title, description and social meta tags only.
+- The list asks the API for one page of posts at a time. Wagtail's API
+  refuses more than `WAGTAILAPI_LIMIT_MAX` posts per request (20 unless you
+  change it), so the theme shows at most 20 posts per page even when
+  django-cast's page size is larger.
+- A post preview in the Wagtail admin shows the draft's body and player, but
+  no comments.
 - Addresses directly below the blog (`<blog>/<slug>/`) are treated as posts.
 - The transcript page (`transcript.html`) and the feed page
   (`feed_detail.html`) fall back to django-cast's plain templates.
@@ -113,7 +119,8 @@ the comment post URL (`comments-post-comment-ajax`).
 
 ## Development
 
-You need Python 3.11+, [uv](https://docs.astral.sh/uv/), Node.js 22+ and
+You need Python 3.11+, [uv](https://docs.astral.sh/uv/), Node.js (22.22.2+,
+24.15+ or 26+, as required by the test tooling) and
 [just](https://just.systems/). `ffmpeg` is needed once to render the example
 audio.
 

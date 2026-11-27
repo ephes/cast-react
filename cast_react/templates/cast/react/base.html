@@ -1,6 +1,7 @@
 {% load static %}
 {% load django_vite %}
 {% load wagtailcore_tags %}
+{% pageurl blog as blog_url_for_request %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE|default:'en' }}">
   <head>
@@ -36,7 +37,7 @@
     {# Everything the React app needs to know about this blog, in one element. #}
     <script id="cast-react-configuration" type="application/json"
             {% block reactjs-data %}
-              data-blog-url="{{ blog.url }}" {# base path of the client-side routes #}
+              data-blog-url="{{ blog_url_for_request }}" {# base path of the client-side routes #}
               data-blog-id="{{ blog.pk }}" {# posts endpoint: child_of=blog.pk #}
               data-blog-title="{{ blog.title }}"
               data-blog-subtitle="{{ blog.subtitle|default:'' }}"

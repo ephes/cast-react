@@ -20,6 +20,7 @@ const config: Config = {
   themeListApiUrl: "",
   themeUpdateApiUrl: "",
   feedUrl: "/feed/",
+  preview: null,
   routeName: "PostList",
   postSlug: "",
   pageType: "",
@@ -157,6 +158,28 @@ describe("post list", () => {
     expect(list?.searchParams.get("limit")).toBe("2");
     expect(list?.searchParams.get("render_for_feed")).toBe("false");
     expect(list?.searchParams.get("use_post_filter")).toBe("true");
+    expect(list?.searchParams.get("theme")).toBe("react");
+  });
+
+  it("never asks the API for more posts than it hands out at once", async () => {
+    window.history.replaceState(null, "", "/show/?page=2");
+    await render(<App config={{ ...config, pageSize: 50 }} />);
+    await settle();
+    const list = requests.find((url) => url.pathname === "/cast/api/wagtail/pages/");
+    expect(list?.searchParams.get("limit")).toBe("20");
+    expect(list?.searchParams.get("offset")).toBe("20");
+  });
+
+  it("combines two filters chosen in quick succession", async () => {
+    const view = await open("/show/");
+    const facets = Array.from(view.querySelectorAll(".cr-facet"));
+    const audio = facets.find((button) => button.textContent?.startsWith("Audio"));
+    const month = facets.find((button) => button.textContent?.includes("2026"));
+    await click(audio ?? null);
+    await click(month ?? null);
+    await settle();
+    await settle();
+    expect(window.location.search).toBe("?date_facets=2026-11&category_facets=audio");
   });
 
   it("goes to the next page and keeps it in the address", async () => {
@@ -271,6 +294,38 @@ describe("post page", () => {
     await act(async () => FakeAudio.instances[0].ready(540));
     expect(FakeAudio.instances[0].currentTime).toBe(90);
     expect(FakeAudio.instances[0].paused).toBe(true);
+  });
+
+  it("applies a shared time to the audio the link names", async () => {
+    const second = playerMarkup.replaceAll("cast-player-data-1", "cast-player-data-2").replace('"audioId":1', '"audioId":2');
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse({
+          meta: { total_count: 1 },
+          items: [{ ...post(1, "episode-one", "Episode one"), html_detail: body("Two audios", playerMarkup + second) }],
+        }),
+      ),
+    );
+    const view = await open("/show/episode-one/?t=30&audio=2");
+    expect(view.querySelectorAll(".cr-player")).toHaveLength(2);
+    await act(async () => FakeAudio.instances[0].ready(540));
+    expect(FakeAudio.instances[0].currentTime).toBe(30);
+    const clocks = Array.from(view.querySelectorAll(".cr-player__clock"), (clock) => clock.textContent);
+    expect(clocks).toEqual(["0:00-9:00", "0:30-8:30"]);
+  });
+
+  it("shows the draft of a Wagtail preview without asking the API for the post", async () => {
+    window.history.replaceState(null, "", "/show/draft/");
+    const preview = { title: "Unpublished draft", html: body("Not saved yet", playerMarkup) };
+    const view = await render(
+      <App config={{ ...config, routeName: "PostDetail", postSlug: "draft", pageType: "cast.Episode", preview }} />,
+    );
+    await settle();
+    expect(view.querySelector(".cr-detail h1")?.textContent).toBe("Unpublished draft");
+    expect(view.querySelector(".cr-prose")?.textContent).toContain("Not saved yet");
+    expect(view.querySelector(".cr-player")).not.toBeNull();
+    expect(requests.some((url) => url.searchParams.has("slug"))).toBe(false);
   });
 
   it("explains a post that does not exist", async () => {

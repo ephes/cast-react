@@ -15,6 +15,8 @@ export interface Config {
   themeListApiUrl: string;
   themeUpdateApiUrl: string;
   feedUrl: string;
+  // Set in a Wagtail preview: the draft rendered by the server.
+  preview: { title: string; html: string } | null;
   routeName: "PostList" | "PostDetail";
   postSlug: string;
   pageType: string;
@@ -30,10 +32,17 @@ export function readConfig(doc: Document = document): Config {
     throw new Error(`cast-react: invalid blog id "${data.blogId ?? ""}"`);
   }
   const pageSize = Number.parseInt(data.paginationPageSize ?? "", 10);
-  let blogUrl = data.blogUrl || "/";
+  // On a multi-site installation Wagtail may hand out an absolute URL; the router works with paths.
+  let blogUrl = "/";
+  try {
+    blogUrl = new URL(data.blogUrl || "/", doc.baseURI || "http://localhost/").pathname;
+  } catch {
+    blogUrl = "/";
+  }
   if (!blogUrl.endsWith("/")) {
     blogUrl += "/";
   }
+  const preview = doc.getElementById("cast-react-preview");
   const description = doc.getElementById("cast-react-blog-description");
   const navigation = doc.getElementById("cast-react-navigation");
   const links = navigation instanceof HTMLTemplateElement ? navigation.content.querySelectorAll("a") : [];
@@ -55,6 +64,10 @@ export function readConfig(doc: Document = document): Config {
     themeListApiUrl: data.apiThemeListUrl ?? "",
     themeUpdateApiUrl: data.apiThemeUpdateUrl ?? "",
     feedUrl: data.feedUrl ?? "",
+    preview:
+      preview instanceof HTMLTemplateElement
+        ? { title: preview.dataset.title ?? "", html: preview.innerHTML }
+        : null,
     routeName: data.routeName === "PostDetail" ? "PostDetail" : "PostList",
     postSlug: data.postSlug ?? "",
     pageType: data.pageType ?? "",

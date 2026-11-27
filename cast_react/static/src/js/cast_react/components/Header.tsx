@@ -8,6 +8,7 @@ import { Link } from "../navigation";
 import type { Theme } from "../types";
 import { AutoIcon, FeedIcon, MoonIcon, SunIcon } from "./icons";
 
+const THEME_SLUG = "react";
 // The header has room for a handful of links; a site with more pages than that
 // needs its own navigation.
 const MAX_NAVIGATION_LINKS = 5;
@@ -92,9 +93,13 @@ function ThemeSelect({ config }: { config: Config }) {
   if (themes.length < 2) {
     return null;
   }
-  const selected = themes.find((theme) => theme.selected)?.slug ?? "";
+  // This page is rendered by the React theme, whatever the site-wide default says.
+  const selected = themes.some((theme) => theme.slug === THEME_SLUG) ? THEME_SLUG : "";
 
   const change = async (slug: string) => {
+    if (!slug || slug === selected) {
+      return;
+    }
     setError("");
     try {
       const response = await fetch(config.themeUpdateApiUrl, {
@@ -116,6 +121,7 @@ function ThemeSelect({ config }: { config: Config }) {
     <div className="cr-theme-select">
       <label htmlFor="cr-theme-select">Site theme</label>
       <select id="cr-theme-select" value={selected} onChange={(event) => void change(event.target.value)}>
+        {selected === "" && <option value="">Choose…</option>}
         {themes.map((theme) => (
           <option key={theme.slug} value={theme.slug}>
             {theme.name}

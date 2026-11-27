@@ -121,6 +121,17 @@ export function useJson<T>(url: string | null): Resource<T> {
   };
 }
 
+// The slug of this theme. Asking for it explicitly keeps the API's HTML in step
+// with this app, also when the page was opened as a `?theme=react` preview.
+const THEME = "react";
+// Wagtail's API refuses a larger `limit` unless WAGTAILAPI_LIMIT_MAX is raised.
+const API_LIMIT_MAX = 20;
+
+// Posts per page: django-cast's page size, as far as one API request can deliver it.
+export function effectivePageSize(config: Config): number {
+  return Math.min(config.pageSize, API_LIMIT_MAX);
+}
+
 function apiUrl(path: string): URL {
   return new URL(path, window.location.origin);
 }
@@ -139,12 +150,14 @@ export function postListUrl(config: Config, filters: Filters, page: number): str
   url.searchParams.set("child_of", String(config.blogId));
   url.searchParams.set("type", "cast.Post");
   url.searchParams.set("fields", "html_overview,visible_date,cover_image_poster_url");
-  url.searchParams.set("limit", String(config.pageSize));
-  url.searchParams.set("offset", String((Math.max(1, page) - 1) * config.pageSize));
+  const pageSize = effectivePageSize(config);
+  url.searchParams.set("limit", String(pageSize));
+  url.searchParams.set("offset", String((Math.max(1, page) - 1) * pageSize));
   url.searchParams.set("order", filters.o === "visible_date" ? "visible_date" : "-visible_date");
   url.searchParams.set("use_post_filter", "true");
   // Without this the API renders posts as it does for feeds, which leaves out the player data.
   url.searchParams.set("render_for_feed", "false");
+  url.searchParams.set("theme", THEME);
   applyFilters(url, filters);
   return url.toString();
 }
@@ -165,5 +178,6 @@ export function postDetailUrl(config: Config, slug: string, pageType: string): s
     "html_detail,visible_date,cover_image_poster_url,comments,comments_security_data,comments_are_enabled",
   );
   url.searchParams.set("render_for_feed", "false");
+  url.searchParams.set("theme", THEME);
   return url.toString();
 }

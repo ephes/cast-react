@@ -111,7 +111,9 @@ function knownDuration(): number {
 }
 
 function savePosition(force = false): void {
-  if (!state.track || !audio) {
+  // While the start position is still to be applied the element reports 0,
+  // which must not replace what was remembered.
+  if (!state.track || !audio || pendingStart !== null) {
     return;
   }
   const time = audio.currentTime;

@@ -27,6 +27,20 @@ describe("readConfig", () => {
     expect(config.navigation).toEqual([{ href: "/", text: "Home" }]);
   });
 
+  it("turns an absolute blog address into a path", () => {
+    const config = readConfig(page(`data-blog-id="1" data-blog-url="https://podcast.example.org/show/"`));
+    expect(config.blogUrl).toBe("/show/");
+  });
+
+  it("picks up the draft of a Wagtail preview", () => {
+    const doc = page(
+      `data-blog-id="1"`,
+      `<template id="cast-react-preview" data-title="Draft"><article><p>Unsaved</p></article></template>`,
+    );
+    expect(readConfig(doc).preview).toEqual({ title: "Draft", html: "<article><p>Unsaved</p></article>" });
+    expect(readConfig(page(`data-blog-id="1"`)).preview).toBeNull();
+  });
+
   it("uses safe defaults", () => {
     const config = readConfig(page(`data-blog-id="1"`));
     expect(config.blogUrl).toBe("/");

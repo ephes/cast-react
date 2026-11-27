@@ -1,7 +1,7 @@
 // The blog index: description, search and filters, and the paginated posts.
 
 import { useEffect, useMemo } from "react";
-import { facetCountsUrl, postDetailUrl, postListUrl, useJson } from "../api";
+import { effectivePageSize, facetCountsUrl, postDetailUrl, postListUrl, useJson } from "../api";
 import type { Config } from "../config";
 import { Link, go } from "../navigation";
 import { PlayIcon, PauseIcon } from "./icons";
@@ -83,7 +83,7 @@ export function PostListPage({ config, filters, page }: { config: Config; filter
   const facets = useJson<FacetCountsFromApi>(facetCountsUrl(config, filters));
   const current = posts.dataUrl === listUrl;
   const items = posts.data?.items ?? null;
-  const totalPages = posts.data ? Math.max(1, Math.ceil(posts.data.meta.total_count / config.pageSize)) : 1;
+  const totalPages = posts.data ? Math.max(1, Math.ceil(posts.data.meta.total_count / effectivePageSize(config))) : 1;
   const hasFilters = FILTER_KEYS.some((key) => filters[key]);
 
   useEffect(() => {

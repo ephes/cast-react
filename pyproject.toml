@@ -30,7 +30,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "django-cast>=0.2.59",
+    "django-cast>=0.2.62",
     "django-vite>=3",
 ]
 

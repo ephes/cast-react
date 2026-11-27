@@ -81,6 +81,21 @@ export function FilterPanel({
   const timer = useRef<number | undefined>(undefined);
   const latest = useRef({ filters, onChange });
   latest.current = { filters, onChange };
+  // The address follows a change only after the new posts arrived. Until then
+  // further changes build on the pending one instead of on the old address.
+  const pending = useRef<Filters | null>(null);
+  const filtersInAddress = JSON.stringify(filters);
+  useEffect(() => {
+    pending.current = null;
+  }, [filtersInAddress]);
+  useEffect(() => {
+    // Back and forward abandon a change that was still waiting for its posts.
+    const forget = () => {
+      pending.current = null;
+    };
+    window.addEventListener("popstate", forget);
+    return () => window.removeEventListener("popstate", forget);
+  }, []);
   const id = useId();
 
   // Follow the address when it changes from outside (back button, "Clear filters").
@@ -92,12 +107,13 @@ export function FilterPanel({
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const set = (key: FilterKey, value: string, typing = false) => {
-    const next: Filters = { ...latest.current.filters };
+    const next: Filters = { ...(pending.current ?? latest.current.filters) };
     if (value) {
       next[key] = value;
     } else {
       delete next[key];
     }
+    pending.current = next;
     latest.current.onChange(next, typing);
   };
 

@@ -23,6 +23,7 @@ export function PostContent({
   const container = useRef<HTMLDivElement>(null);
   const [slots, setSlots] = useState<{ element: Element; track: PlayerPayload }[]>([]);
   const [lightbox, setLightbox] = useState<{ images: LightboxImage[]; index: number } | null>(null);
+  const opener = useRef<HTMLAnchorElement | null>(null);
 
   useLayoutEffect(() => {
     const found: { element: Element; track: PlayerPayload }[] = [];
@@ -48,6 +49,7 @@ export function PostContent({
     const gallery = link.closest(".cast-gallery") ?? container.current;
     const links = Array.from(gallery.querySelectorAll<HTMLAnchorElement>("a.cast-gallery-link"));
     event.preventDefault();
+    opener.current = link;
     setLightbox({ images: links.map(imageFromLink), index: Math.max(0, links.indexOf(link)) });
   };
 
@@ -61,7 +63,11 @@ export function PostContent({
           images={lightbox.images}
           index={lightbox.index}
           onChange={(index) => setLightbox({ images: lightbox.images, index })}
-          onClose={() => setLightbox(null)}
+          onClose={() => {
+            setLightbox(null);
+            // Back to the picture the reader came from.
+            opener.current?.focus();
+          }}
         />
       )}
     </>

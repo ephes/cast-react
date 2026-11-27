@@ -30,6 +30,12 @@ export function go(href: string, prefetch: string[] = [], options: { replace?: b
   void Promise.race([ready, timeout]).then(change);
 }
 
+// Going back or forward while a link still waits for its data abandons that link.
+window.addEventListener("popstate", () => {
+  navigationCounter += 1;
+  document.documentElement.classList.remove("cr-navigating");
+});
+
 interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
   prefetch?: string[];

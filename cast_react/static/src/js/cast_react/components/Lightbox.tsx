@@ -52,6 +52,16 @@ export function Lightbox({
     }
   }, []);
 
+  // Closing through the dialog lets the browser run its own close steps.
+  const close = () => {
+    const element = dialog.current;
+    if (element?.open && typeof element.close === "function") {
+      element.close();
+    } else {
+      onClose();
+    }
+  };
+
   if (!image) {
     return null;
   }
@@ -68,7 +78,7 @@ export function Lightbox({
       onClick={(event) => {
         // A click on the dimmed area around the picture closes the view.
         if (event.target === event.currentTarget) {
-          onClose();
+          close();
         }
       }}
       onKeyDown={(event) => {
@@ -116,7 +126,7 @@ export function Lightbox({
         <button
           type="button"
           className="cr-lightbox__button"
-          onClick={onClose}
+          onClick={close}
           aria-label="Close the picture view"
           autoFocus
         >

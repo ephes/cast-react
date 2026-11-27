@@ -159,13 +159,22 @@ const Block = memo(function Block({
       </p>
       <p className="cr-transcript__text">
         {block.cues.map(({ cue, index }) => (
-          // Mouse and touch shortcut; keyboard users seek with the time button above.
+          // Not a tab stop each (a transcript has hundreds of lines): the arrow
+          // keys move through the lines once the transcript text has focus.
           <span
             key={index}
+            role="button"
+            tabIndex={-1}
             className="cr-transcript__cue"
             data-cue={index}
             data-active={index === activeIndex || undefined}
             onClick={() => onSeek(cue.start)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSeek(cue.start);
+              }
+            }}
           >
             {highlight(cue.text, query)}{" "}
           </span>
@@ -256,6 +265,24 @@ export function Transcript({ track }: { track: PlayerPayload }) {
 
   const onSeek = useMemo(() => (seconds: number) => void play(track, { startAt: seconds }), [track]);
 
+  // Arrow keys walk through the lines; Enter or Space on a line plays from there.
+  const moveThroughLines = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+      return;
+    }
+    const lines = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("[data-cue]"));
+    if (lines.length === 0) {
+      return;
+    }
+    const focused = lines.indexOf(document.activeElement as HTMLElement);
+    const spoken = lines.findIndex((line) => line.hasAttribute("data-active"));
+    const from = focused >= 0 ? focused : spoken;
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    const target = from < 0 ? 0 : Math.min(lines.length - 1, Math.max(0, from + step));
+    event.preventDefault();
+    lines[target].focus();
+  };
+
   const toggleFollow = () => {
     const next = !follow;
     setFollow(next);
@@ -308,7 +335,14 @@ export function Transcript({ track }: { track: PlayerPayload }) {
       <p className="cr-transcript__count" role="status">
         {needle ? (matchCount === 1 ? "1 line matches" : `${matchCount} lines match`) : ""}
       </p>
-      <div className="cr-transcript__scroll" ref={scroller} tabIndex={0} aria-label="Transcript text">
+      <div
+        className="cr-transcript__scroll"
+        ref={scroller}
+        tabIndex={0}
+        role="group"
+        aria-label="Transcript text. Use the arrow keys to move through the lines and Enter to play from a line."
+        onKeyDown={moveThroughLines}
+      >
         {shown.length === 0 && <p className="cr-transcript__status">No line contains “{query.trim()}”.</p>}
         {shown.map((block) => {
           const first = block.cues[0].index;

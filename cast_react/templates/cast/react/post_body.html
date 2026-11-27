@@ -1,4 +1,5 @@
 {% load wagtailcore_tags %}
+{% load cast_audio_player %}
 {# Rendered by the pages API (html_overview / html_detail); the React app places this markup in the page. #}
 <article>
   <div class="cast-react-article-data" hidden
@@ -7,6 +8,11 @@
        data-article-author="{{ page.owner.username|title }}"
        {% if render_detail and episode_transcript_url %}data-transcript-url="{{ episode_transcript_url }}"{% endif %}
   ></div>
+  {# An episode's own audio comes first, also when the body has no audio block. #}
+  {# The app shows each audio once, however often its data appears. #}
+  {% if page.podcast_audio and page.pk and not render_for_feed %}
+    {% cast_custom_player page.podcast_audio page %}
+  {% endif %}
   {% block episode_contributors %}
     {% if render_detail and not render_for_feed and episode_contributors %}
       {% include "cast/contributors.html" %}

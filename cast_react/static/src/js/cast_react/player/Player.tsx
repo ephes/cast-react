@@ -149,9 +149,15 @@ function SeekBar({
   );
 }
 
-function shareUrl(track: PlayerPayload, seconds: number): string {
+function shareUrl(track: PlayerPayload, seconds: number, secondary: boolean): string {
   const url = new URL(track.permalink || window.location.href, window.location.origin);
   url.hash = "";
+  // A post can hold more than one audio; say which one the time belongs to.
+  if (secondary) {
+    url.searchParams.set("audio", String(track.audioId));
+  } else {
+    url.searchParams.delete("audio");
+  }
   if (seconds >= 1) {
     url.searchParams.set("t", String(Math.floor(seconds)));
   } else {
@@ -160,7 +166,15 @@ function shareUrl(track: PlayerPayload, seconds: number): string {
   return url.toString();
 }
 
-function CopyLinkButton({ track, currentTime }: { track: PlayerPayload; currentTime: number }) {
+function CopyLinkButton({
+  track,
+  currentTime,
+  secondary,
+}: {
+  track: PlayerPayload;
+  currentTime: number;
+  secondary: boolean;
+}) {
   const [copied, setCopied] = useState<"no" | "yes" | "failed">("no");
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -168,7 +182,7 @@ function CopyLinkButton({ track, currentTime }: { track: PlayerPayload; currentT
   const copy = async () => {
     let result: "yes" | "failed" = "yes";
     try {
-      await navigator.clipboard.writeText(shareUrl(track, currentTime));
+      await navigator.clipboard.writeText(shareUrl(track, currentTime, secondary));
     } catch {
       result = "failed";
     }
@@ -187,7 +201,16 @@ function CopyLinkButton({ track, currentTime }: { track: PlayerPayload; currentT
   );
 }
 
-export function Player({ track, heading = true }: { track: PlayerPayload; heading?: boolean }) {
+// `secondary` marks a further audio inside a post, below the post's main player.
+export function Player({
+  track,
+  heading = true,
+  secondary = false,
+}: {
+  track: PlayerPayload;
+  heading?: boolean;
+  secondary?: boolean;
+}) {
   const state = usePlayerState();
   const view = viewFor(state, track);
   const playing = view.status === "playing" || view.status === "loading";
@@ -304,7 +327,7 @@ export function Player({ track, heading = true }: { track: PlayerPayload; headin
         </p>
       )}
       <div className="cr-player__extras">
-        <CopyLinkButton track={track} currentTime={view.currentTime} />
+        <CopyLinkButton track={track} currentTime={view.currentTime} secondary={secondary} />
       </div>
     </section>
   );

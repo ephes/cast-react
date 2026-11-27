@@ -2,7 +2,7 @@
 // body and its comments.
 
 import { useEffect, useMemo, useRef } from "react";
-import { postDetailUrl, useJson } from "../api";
+import { fetchJson, postDetailUrl, useJson } from "../api";
 import type { Config } from "../config";
 import { Link } from "../navigation";
 import { PlayerPanels } from "../player/Panels";
@@ -11,7 +11,7 @@ import { getPlayerState, loadTrack } from "../player/store";
 import { parsePostHtml } from "../postHtml";
 import { detailHref, settleScroll } from "../router";
 import { parseStartTime } from "../time";
-import type { PostsFromApi } from "../types";
+import type { CommentSecurityData, Post, PostsFromApi } from "../types";
 import { Comments } from "./Comments";
 import { ChevronLeftIcon } from "./icons";
 import { PostContent } from "./PostContent";
@@ -30,9 +30,23 @@ export function PostDetailPage({
 }) {
   const pageType = knownPageTypes.get(slug) ?? (slug === config.postSlug ? config.pageType : "");
   const url = postDetailUrl(config, slug, pageType);
-  const resource = useJson<PostsFromApi>(url);
-  const loaded = resource.dataUrl === url;
-  const post = loaded ? (resource.data?.items[0] ?? null) : null;
+  // In a Wagtail preview the draft comes with the page; the API only knows what is published.
+  const preview = config.preview !== null && slug === config.postSlug ? config.preview : null;
+  const resource = useJson<PostsFromApi>(preview ? null : url);
+  const loaded = preview !== null || resource.dataUrl === url;
+  const previewPost = useMemo<Post | null>(
+    () =>
+      preview
+        ? {
+            id: 0,
+            title: preview.title,
+            html_detail: preview.html,
+            meta: { type: pageType, detail_url: "", html_url: "", slug, first_published_at: "" },
+          }
+        : null,
+    [preview, pageType, slug],
+  );
+  const post = previewPost ?? (loaded ? (resource.data?.items[0] ?? null) : null);
   const parsed = useMemo(
     () =>
       post
@@ -44,6 +58,7 @@ export function PostDetailPage({
     [post, config.blogUrl, slug],
   );
   const track = parsed?.players[0] ?? null;
+  const players = parsed?.players;
   const startHandled = useRef(false);
 
   useEffect(() => {
@@ -59,15 +74,25 @@ export function PostDetailPage({
   // A shared link like `?t=754` opens the episode at that moment. Nothing that
   // is already playing gets interrupted for it.
   useEffect(() => {
-    if (!track || startHandled.current) {
+    if (!players || players.length === 0 || startHandled.current) {
       return;
     }
     startHandled.current = true;
-    const startAt = parseStartTime(new URLSearchParams(window.location.search).get("t"));
+    const params = new URLSearchParams(window.location.search);
+    const startAt = parseStartTime(params.get("t"));
+    // Links copied from a second audio of the same post name it with `audio`.
+    const wanted = players.find((player) => String(player.audioId) === params.get("audio")) ?? players[0];
     if (startAt !== null && getPlayerState().track === null) {
-      loadTrack(track, { startAt });
+      loadTrack(wanted, { startAt });
     }
-  }, [track]);
+  }, [players]);
+
+  // The signature that lets a comment through is only valid for a while. Get a
+  // new one when the page has been open for long, without touching the form.
+  const refreshSecurity = async (): Promise<CommentSecurityData | undefined> => {
+    const fresh = await fetchJson<PostsFromApi>(url, { fresh: true });
+    return fresh.items[0]?.comments_security_data;
+  };
 
   const back = (
     <Link className="cr-back" href={listHref} prefetch={listPrefetch}>
@@ -132,7 +157,7 @@ export function PostDetailPage({
           players={parsed.players}
           renderPlayer={(extra) => (
             <>
-              <Player track={extra} />
+              <Player track={extra} secondary />
               <PlayerPanels track={extra} />
             </>
           )}
@@ -143,6 +168,7 @@ export function PostDetailPage({
           enabled={post.comments_are_enabled ?? false}
           security={post.comments_security_data}
           onPosted={resource.reload}
+          refreshSecurity={refreshSecurity}
         />
       </div>
     </article>

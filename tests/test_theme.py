@@ -156,6 +156,35 @@ def test_feed_rendering_has_no_player_markup(client, podcast):
     assert "cast-audio-player" not in html
 
 
+def test_episode_audio_without_audio_block_still_has_a_player(client, podcast):
+    blog, episode, audio = podcast
+    episode.body = json.dumps(devdata.create_python_body())
+    episode.save()
+    item = api_item(client, blog, slug=episode.slug, type="cast.Episode", fields="html_detail")
+    assert player_payload(item["html_detail"], audio.pk)["audioId"] == audio.pk
+
+
+def test_theme_parameter_selects_this_theme_for_api_html(client, podcast):
+    blog, _episode, _audio = podcast
+    blog.template_base_dir = "plain"
+    blog.save()
+    assert "cast-react-article-data" not in api_item(client, blog, fields="html_overview")["html_overview"]
+    assert "cast-react-article-data" in api_item(client, blog, fields="html_overview", theme=THEME)["html_overview"]
+
+
+def test_preview_renders_the_draft_into_the_page(client, podcast):
+    _blog, episode, _audio = podcast
+    episode.title = "Unsaved title"
+    response = episode.make_preview_request()
+    response.render()
+    html = response.content.decode()
+    preview = re.search(r'<template id="cast-react-preview" data-title="Unsaved title">(.*?)</template>', html, re.S)
+    assert preview is not None
+    assert "only_in_detail" in preview.group(1)
+    # The published page carries no draft.
+    assert "cast-react-preview" not in client.get(episode.url).content.decode()
+
+
 def test_facet_counts_api_shape(client, podcast):
     blog, _episode, _audio = podcast
     response = client.get(blog.facet_counts_api_url)

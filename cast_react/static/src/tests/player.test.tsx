@@ -3,7 +3,7 @@ import { clearJsonCache } from "@/api";
 import { MiniPlayer } from "@/player/MiniPlayer";
 import { PlayerPanels } from "@/player/Panels";
 import { Player } from "@/player/Player";
-import { getPlayerState, play, resetPlayerForTests, seek } from "@/player/store";
+import { getPlayerState, play, resetPlayerForTests, seek, unloadTrack } from "@/player/store";
 import { FakeAudio, TRACK, cleanup, click, jsonResponse, render, settle } from "./helpers";
 
 const CUES = [
@@ -67,6 +67,14 @@ describe("Player", () => {
     expect(window.localStorage.getItem("cast-react-rate")).toBe("1.25");
   });
 
+  it("keeps the remembered position when the episode is closed before it loaded", async () => {
+    window.localStorage.setItem("cast-react-position-7", "200");
+    const view = await render(<Player track={TRACK} />);
+    await click(view.querySelector(".cr-player__play"));
+    await act(async () => unloadTrack());
+    expect(window.localStorage.getItem("cast-react-position-7")).toBe("200");
+  });
+
   it("resumes where the listener stopped", async () => {
     window.localStorage.setItem("cast-react-position-7", "200");
     const view = await render(<Player track={TRACK} />);
@@ -110,6 +118,25 @@ describe("PlayerPanels", () => {
       seek(6);
     });
     expect(view.querySelector("[data-active]")?.textContent?.trim()).toBe("Today we talk about chapter marks.");
+  });
+
+  it("lets the keyboard walk through the lines and play from one", async () => {
+    const view = await render(<PlayerPanels track={TRACK} />);
+    await click(view.querySelectorAll('[role="tab"]')[1]);
+    await settle();
+    const scroller = view.querySelector<HTMLElement>(".cr-transcript__scroll");
+    const press = async (target: Element | null, key: string) => {
+      await act(async () => {
+        target?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+      });
+    };
+    scroller?.focus();
+    await press(scroller, "ArrowDown");
+    await press(document.activeElement, "ArrowDown");
+    expect(document.activeElement?.textContent?.trim()).toBe("Today we talk about chapter marks.");
+    await press(document.activeElement, "Enter");
+    await act(async () => FakeAudio.instances[0].ready(600));
+    expect(FakeAudio.instances[0].currentTime).toBe(5);
   });
 
   it("explains a transcript that cannot be loaded", async () => {
