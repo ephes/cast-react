@@ -6,7 +6,9 @@ from cast import devdata
 from cast.models import Audio, Blog, ChapterMark, Episode
 from cast.models.theme import get_required_template_names, get_template_base_dir_choices
 from django.apps import apps
+from django.template import Context, Template
 from django.template.loader import get_template, render_to_string
+from django.urls import reverse
 from wagtail.models import Site
 
 import cast_react
@@ -266,3 +268,26 @@ def test_example_media_view_answers_range_requests(rf, podcast):
     assert get(f"bytes={len(content)}-").status_code == 416
     with pytest.raises(Http404):
         get(path="../settings.py")
+
+
+def test_pages_without_a_blog_render_plainly(client, podcast):
+    # django-cast's theme chooser page extends the selected theme's base without a blog.
+    url = reverse("cast:select-theme")
+    assert client.post(url, {"template_base_dir": THEME, "next": "/"}).status_code == 302
+    response = client.get(url)
+    assert response.status_code == 200
+    html = response.content.decode()
+    assert 'class="cr-plain"' in html
+    assert "<title>Select Theme</title>" in html
+    assert '<a href="/">Start page</a>' in html
+    assert f'value="{THEME}"' in html
+    assert "cast-react-configuration" not in html
+    assert "cast_react/main" not in html
+
+
+def test_site_page_content_block_renders_without_a_blog():
+    html = Template('{% extends "cast/react/base.html" %}{% block content %}<p>About us</p>{% endblock %}').render(
+        Context({})
+    )
+    assert "<p>About us</p>" in html
+    assert "cast-react-configuration" not in html

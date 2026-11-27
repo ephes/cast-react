@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.0.3
+
+- Pages that extend the theme's base without a blog (django-cast's theme
+  chooser page, a site's own pages such as an imprint or account pages) render
+  as a plain page with their `content` block instead of failing.
+- The `title` block of `cast/react/base.html` now holds only the title text,
+  inside `<title>`, as in django-cast's other themes. A template that
+  overrides it with its own `<title>` element must drop that element.
+
 ## 0.0.2
 
 - The list follows the site's `WAGTAILAPI_LIMIT_MAX`: with a cap below

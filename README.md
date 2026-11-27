@@ -25,7 +25,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.2"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.3"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player
@@ -95,6 +95,9 @@ is how django-cast discovers themes.
 - `gallery.html` renders plain links to the large pictures, which the app
   opens in a lightbox.
 - The error pages (`400.html` … `500.html`) are plain HTML without JavaScript.
+- A page that extends `cast/react/base.html` without a `blog` in its context
+  (django-cast's theme chooser page, a site's own pages such as an imprint,
+  account pages) gets a plain page with its `{% block content %}` and no app.
 
 API endpoints used: the Wagtail pages API (`cast:api:wagtail:pages:listing`,
 with `use_post_filter=true` and `render_for_feed=false`), facet counts

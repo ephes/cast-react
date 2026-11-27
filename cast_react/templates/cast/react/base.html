@@ -2,7 +2,8 @@
 {% load django_vite %}
 {% load wagtailcore_tags %}
 {% load cast_react_tags %}
-{% pageurl blog as blog_url_for_request %}
+{# Pages without a blog (theme chooser, site pages, accounts) get a plain page below, without the app. #}
+{% if blog %}{% pageurl blog as blog_url_for_request %}{% endif %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE|default:'en' }}">
   <head>
@@ -17,9 +18,10 @@
           <meta name="robots" content="index, follow">
         {% endif %}
       {% endblock robots %}
-      {% block title %}<title>{{ blog.seo_title|default:blog.title }}</title>{% endblock title %}
+      {# Children override `title` with plain text, as django-cast's own pages do. #}
+      <title>{% block title %}{% firstof blog.seo_title blog.title %}{% endblock title %}</title>
       {% block description %}
-        <meta name="description" content="{{ blog.search_description|default:blog.title }}">
+        <meta name="description" content="{% firstof blog.search_description blog.title %}">
       {% endblock description %}
     {% endblock meta %}
     {% block feeds %}
@@ -29,12 +31,30 @@
     {% endblock feeds %}
     {% block css %}{% endblock css %}
     {% block javascript %}
-      {% vite_react_refresh app="cast_react" %}
-      {% vite_hmr_client app="cast_react" %}
-      {% vite_asset 'js/cast_react/main.tsx' app="cast_react" %}
+      {% if blog %}
+        {% vite_react_refresh app="cast_react" %}
+        {% vite_hmr_client app="cast_react" %}
+        {% vite_asset 'js/cast_react/main.tsx' app="cast_react" %}
+      {% endif %}
     {% endblock javascript %}
+    {% if not blog %}
+      <style>
+        body { margin: 0; padding: 1.5rem; font: 1.0625rem/1.6 system-ui, sans-serif;
+               background: Canvas; color: CanvasText; }
+        .cr-plain { max-width: 40rem; margin: 0 auto; }
+        .cr-plain h1, .cr-plain h2 { font-family: Charter, "Bitstream Charter", "Sitka Text", Cambria, serif; }
+        .cr-plain input, .cr-plain button, .cr-plain select, .cr-plain textarea { font: inherit; }
+      </style>
+    {% endif %}
   </head>
   <body>
+    {% if not blog %}
+      <div class="cr-plain">
+        {# The site root, also when Django is mounted below a path prefix. #}
+        <p><a href="{{ request.META.SCRIPT_NAME }}/">Start page</a></p>
+        <main>{% block content %}{% endblock content %}</main>
+      </div>
+    {% else %}
     {# Everything the React app needs to know about this blog, in one element. #}
     <script id="cast-react-configuration" type="application/json"
             {% block reactjs-data %}
@@ -66,5 +86,6 @@
         </p>
       </noscript>
     {% endblock main %}
+    {% endif %}
   </body>
 </html>
