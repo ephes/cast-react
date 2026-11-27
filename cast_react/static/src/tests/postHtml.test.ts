@@ -57,6 +57,16 @@ describe("parsePostHtml", () => {
     expect(parsed.html).not.toContain("<script");
   });
 
+  it("drops the transcripts of a post that was never saved", () => {
+    expect(parsePostHtml(article(player(1)), { playerSlots: "none" }).players[0].transcript).toEqual({
+      url: "/transcript/1/",
+    });
+    const unsaved = article(player(1)).replace("data-article-author", "data-no-transcripts data-article-author");
+    const parsed = parsePostHtml(unsaved, { playerSlots: "none" });
+    expect(parsed.players).toHaveLength(1);
+    expect(parsed.players[0].transcript).toBeNull();
+  });
+
   it("leaves slots for every player after the first", () => {
     const parsed = parsePostHtml(article(player(1) + player(2)), { playerSlots: "afterFirst" });
     expect(parsed.players.map((track) => track.audioId)).toEqual([1, 2]);

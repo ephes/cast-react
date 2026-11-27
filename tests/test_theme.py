@@ -3,7 +3,7 @@ import re
 
 import pytest
 from cast import devdata
-from cast.models import Audio, Blog, ChapterMark
+from cast.models import Audio, Blog, ChapterMark, Episode
 from cast.models.theme import get_required_template_names, get_template_base_dir_choices
 from django.apps import apps
 from django.template.loader import get_template, render_to_string
@@ -183,6 +183,57 @@ def test_preview_renders_the_draft_into_the_page(client, podcast):
     assert "only_in_detail" in preview.group(1)
     # The published page carries no draft.
     assert "cast-react-preview" not in client.get(episode.url).content.decode()
+
+
+def unsaved_draft(blog, owner, *, podcast_audio=None, body=None):
+    # As Wagtail's "preview on create" does: an unsaved page placed below its parent.
+    draft = Episode(
+        title="Brand new",
+        slug="brand-new",
+        owner=owner,
+        podcast_audio=podcast_audio,
+        body=json.dumps(body or devdata.create_python_body()),
+    )
+    draft.depth = blog.depth + 1
+    draft.path = blog.get_last_child()._inc_path()
+    response = draft.make_preview_request()
+    response.render()
+    preview = re.search(
+        r'<template id="cast-react-preview" data-title="Brand new">(.*?)</template>', response.content.decode(), re.S
+    )
+    assert preview is not None
+    return preview.group(1)
+
+
+def test_preview_of_a_never_saved_episode_has_its_episode_player(podcast):
+    blog, episode, audio = podcast
+    html = unsaved_draft(blog, episode.owner, podcast_audio=audio)
+    assert f'id="cast-player-data-{audio.pk}"' in html
+    assert "data-no-transcripts" in html
+
+
+def test_preview_of_a_never_saved_post_has_its_audio_block_player(podcast):
+    blog, episode, audio = podcast
+    body = devdata.add_audio_to_body(body=devdata.create_python_body(), audio=audio)
+    html = unsaved_draft(blog, episode.owner, body=body)
+    assert f'id="cast-player-data-{audio.pk}"' in html
+    assert "data-no-transcripts" in html
+
+
+def test_preview_of_a_saved_episode_keeps_transcripts(podcast):
+    _blog, episode, _audio = podcast
+    saved = episode.make_preview_request()
+    saved.render()
+    assert "data-no-transcripts" not in saved.content.decode()
+
+
+def test_api_limit_reaches_the_app(client, podcast, settings):
+    blog, _episode, _audio = podcast
+    assert configuration(client.get(blog.url).content.decode())["api-limit-max"] == "20"
+    settings.WAGTAILAPI_LIMIT_MAX = 5
+    assert configuration(client.get(blog.url).content.decode())["api-limit-max"] == "5"
+    settings.WAGTAILAPI_LIMIT_MAX = None
+    assert configuration(client.get(blog.url).content.decode())["api-limit-max"] == ""
 
 
 def test_facet_counts_api_shape(client, podcast):

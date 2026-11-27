@@ -22,8 +22,10 @@ What you get:
 
 ### 1. Install the theme
 
+`cast-react` is not on PyPI yet. Install a tagged version from GitHub:
+
 ```shell
-pip install cast-react
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.2"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player
@@ -79,8 +81,8 @@ is how django-cast discovers themes.
 
 - `base.html` loads the bundle through django-vite and passes the blog's
   settings to the app as `data-` attributes of one element
-  (`#cast-react-configuration`): blog URL and id, page size, the API URLs and
-  the CSRF token. `blog_list_of_posts.html`, `post.html` and `episode.html`
+  (`#cast-react-configuration`): blog URL and id, page size, the API cap
+  (`WAGTAILAPI_LIMIT_MAX`), the API URLs and the CSRF token. `blog_list_of_posts.html`, `post.html` and `episode.html`
   add the route (`PostList` or `PostDetail`), the post slug and the page type,
   and set title, description, canonical URL and social meta tags on the server.
 - `post_body.html` is what the pages API returns as `html_overview` and
@@ -107,12 +109,13 @@ the comment post URL (`comments-post-comment-ajax`).
   JavaScript see title, description and social meta tags only.
 - The list asks the API for one page of posts at a time. Wagtail's API
   refuses more than `WAGTAILAPI_LIMIT_MAX` posts per request (20 unless you
-  change it), so the theme shows at most 20 posts per page even when
-  django-cast's page size is larger. If you set `WAGTAILAPI_LIMIT_MAX` below
-  django-cast's page size, the list cannot load: keep it at or above the page
-  size.
+  change it), so when django-cast's page size is larger, the theme shows
+  `WAGTAILAPI_LIMIT_MAX` posts per page instead. With `WAGTAILAPI_LIMIT_MAX`
+  set to `None` or `0` Wagtail has no cap, and the theme uses django-cast's
+  full page size.
 - A post preview in the Wagtail admin shows the draft's body and player, but
-  no comments, and no player for an episode that has never been saved.
+  no comments. For an episode that has never been saved, the player has no
+  transcript yet.
 - Addresses directly below the blog (`<blog>/<slug>/`) are treated as posts.
 - The transcript page (`transcript.html`) and the feed page
   (`feed_detail.html`) fall back to django-cast's plain templates.

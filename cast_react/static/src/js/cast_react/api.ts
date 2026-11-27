@@ -124,12 +124,10 @@ export function useJson<T>(url: string | null): Resource<T> {
 // The slug of this theme. Asking for it explicitly keeps the API's HTML in step
 // with this app, also when the page was opened as a `?theme=react` preview.
 const THEME = "react";
-// Wagtail's API refuses a larger `limit` unless WAGTAILAPI_LIMIT_MAX is raised.
-const API_LIMIT_MAX = 20;
-
 // Posts per page: django-cast's page size, as far as one API request can deliver it.
+// Wagtail's API refuses a `limit` above WAGTAILAPI_LIMIT_MAX, which the template passes in.
 export function effectivePageSize(config: Config): number {
-  return Math.min(config.pageSize, API_LIMIT_MAX);
+  return config.apiLimitMax === null ? config.pageSize : Math.min(config.pageSize, config.apiLimitMax);
 }
 
 function apiUrl(path: string): URL {

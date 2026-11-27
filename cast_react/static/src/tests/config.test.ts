@@ -10,7 +10,7 @@ function page(attributes: string, extra = ""): Document {
 describe("readConfig", () => {
   it("reads the values the template provides", () => {
     const doc = page(
-      `data-blog-url="/show" data-blog-id="3" data-blog-title="Ground Loop" data-pagination-page-size="7"
+      `data-blog-url="/show" data-blog-id="3" data-blog-title="Ground Loop" data-pagination-page-size="7" data-api-limit-max="30"
        data-wagtail-api-pages-url="/cast/api/wagtail/pages/" data-route-name="PostDetail" data-post-slug="episode-05"
        data-page-type="cast.Episode" data-csrf-token="token"`,
       `<template id="cast-react-blog-description"><p>About <b>us</b></p></template>
@@ -20,6 +20,7 @@ describe("readConfig", () => {
     expect(config.blogUrl).toBe("/show/");
     expect(config.blogId).toBe(3);
     expect(config.pageSize).toBe(7);
+    expect(config.apiLimitMax).toBe(30);
     expect(config.routeName).toBe("PostDetail");
     expect(config.postSlug).toBe("episode-05");
     expect(config.pageType).toBe("cast.Episode");
@@ -45,6 +46,8 @@ describe("readConfig", () => {
     const config = readConfig(page(`data-blog-id="1"`));
     expect(config.blogUrl).toBe("/");
     expect(config.pageSize).toBe(5);
+    expect(config.apiLimitMax).toBe(20);
+    expect(readConfig(page(`data-blog-id="1" data-api-limit-max=""`)).apiLimitMax).toBeNull();
     expect(config.routeName).toBe("PostList");
     expect(config.navigation).toEqual([]);
   });

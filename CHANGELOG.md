@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.0.2
+
+- The list follows the site's `WAGTAILAPI_LIMIT_MAX`: with a cap below
+  django-cast's page size it shows fewer posts per page instead of failing to
+  load, and without a cap it shows the full page size.
+- A Wagtail preview of an episode that has never been saved shows its player
+  (without transcript, which needs a saved post).
+- Installation from a git tag documented; the package is not on PyPI.
+
 ## 0.0.1
 
 First version of the React theme for django-cast.

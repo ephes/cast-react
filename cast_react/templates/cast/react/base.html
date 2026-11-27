@@ -1,6 +1,7 @@
 {% load static %}
 {% load django_vite %}
 {% load wagtailcore_tags %}
+{% load cast_react_tags %}
 {% pageurl blog as blog_url_for_request %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE|default:'en' }}">
@@ -43,6 +44,7 @@
               data-blog-subtitle="{{ blog.subtitle|default:'' }}"
               data-csrf-token="{{ csrf_token }}" {# posting comments, switching themes #}
               data-pagination-page-size="{{ blog.pagination_page_size }}"
+              data-api-limit-max="{% cast_react_api_limit_max %}" {# Wagtail's cap on posts per API request #}
               data-wagtail-api-pages-url="{{ blog.wagtail_api_pages_url }}"
               data-api-facet-counts-url="{{ blog.facet_counts_api_url }}"
               data-post-comment-url="{{ blog.comment_post_url }}"

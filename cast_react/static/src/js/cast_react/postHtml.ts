@@ -68,6 +68,8 @@ export function parsePostHtml(
     author: data.articleAuthor ?? "",
     transcriptUrl: data.transcriptUrl ?? "",
   };
+  // Set for a preview of a post that was never saved: its transcripts cannot be loaded yet.
+  const noTranscripts = data.noTranscripts !== undefined;
   doc.querySelectorAll(".cast-react-article-data").forEach((node) => node.remove());
 
   const players: PlayerPayload[] = [];
@@ -79,6 +81,9 @@ export function parsePostHtml(
       const parsed: unknown = JSON.parse(script?.textContent ?? "null");
       if (isPlayerPayload(parsed)) {
         payload = normalizePayload(parsed);
+        if (noTranscripts) {
+          payload.transcript = null;
+        }
         // The mini player links back to the post an episode belongs to.
         payload.permalink = payload.permalink || options.permalink;
       }

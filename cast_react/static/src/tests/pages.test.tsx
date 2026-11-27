@@ -14,6 +14,7 @@ const config: Config = {
   navigation: [{ href: "/", text: "Home" }],
   csrfToken: "token",
   pageSize: 2,
+  apiLimitMax: 20,
   pagesApiUrl: "/cast/api/wagtail/pages/",
   facetCountsApiUrl: "/cast/api/facet_counts/3",
   postCommentUrl: "/show/comments/post/ajax/",
@@ -168,6 +169,23 @@ describe("post list", () => {
     const list = requests.find((url) => url.pathname === "/cast/api/wagtail/pages/");
     expect(list?.searchParams.get("limit")).toBe("20");
     expect(list?.searchParams.get("offset")).toBe("20");
+  });
+
+  it("follows the API cap the site configured", async () => {
+    window.history.replaceState(null, "", "/show/?page=2");
+    await render(<App config={{ ...config, pageSize: 10, apiLimitMax: 4 }} />);
+    await settle();
+    const capped = requests.find((url) => url.pathname === "/cast/api/wagtail/pages/");
+    expect(capped?.searchParams.get("limit")).toBe("4");
+    expect(capped?.searchParams.get("offset")).toBe("4");
+  });
+
+  it("asks for the whole page size when the API has no cap", async () => {
+    window.history.replaceState(null, "", "/show/");
+    await render(<App config={{ ...config, pageSize: 50, apiLimitMax: null }} />);
+    await settle();
+    const list = requests.find((url) => url.pathname === "/cast/api/wagtail/pages/");
+    expect(list?.searchParams.get("limit")).toBe("50");
   });
 
   it("combines two filters chosen in quick succession", async () => {

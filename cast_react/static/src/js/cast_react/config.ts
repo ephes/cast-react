@@ -9,6 +9,8 @@ export interface Config {
   navigation: { href: string; text: string }[];
   csrfToken: string;
   pageSize: number;
+  // Wagtail's WAGTAILAPI_LIMIT_MAX; null when the API has no cap.
+  apiLimitMax: number | null;
   pagesApiUrl: string;
   facetCountsApiUrl: string;
   postCommentUrl: string;
@@ -32,6 +34,7 @@ export function readConfig(doc: Document = document): Config {
     throw new Error(`cast-react: invalid blog id "${data.blogId ?? ""}"`);
   }
   const pageSize = Number.parseInt(data.paginationPageSize ?? "", 10);
+  const apiLimitMax = Number.parseInt(data.apiLimitMax ?? "", 10);
   // On a multi-site installation Wagtail may hand out an absolute URL; the router works with paths.
   let blogUrl = "/";
   try {
@@ -58,6 +61,9 @@ export function readConfig(doc: Document = document): Config {
     })).filter((link) => link.href && link.text),
     csrfToken: data.csrfToken ?? "",
     pageSize: Number.isNaN(pageSize) || pageSize < 1 ? 5 : pageSize,
+    // An empty attribute means "no cap"; without the attribute (an older template override) keep Wagtail's default.
+    apiLimitMax:
+      data.apiLimitMax === undefined ? 20 : Number.isNaN(apiLimitMax) || apiLimitMax < 1 ? null : apiLimitMax,
     pagesApiUrl: data.wagtailApiPagesUrl ?? "/",
     facetCountsApiUrl: data.apiFacetCountsUrl ?? "/",
     postCommentUrl: data.postCommentUrl ?? "/",

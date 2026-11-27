@@ -1,6 +1,8 @@
 {% load cast_audio_player %}
 {# The React player reads django-cast's player payload (sources, chapters, lazy transcript URL) #}
 {# from the JSON script this tag renders; the custom elements next to it stay inert and are removed. #}
-{% if page.pk and not render_for_feed %}
-  {% cast_custom_player value page %}
+{% if not render_for_feed %}
+  {% if page.pk or request.is_preview %}
+    {% cast_custom_player value page %}
+  {% endif %}
 {% endif %}

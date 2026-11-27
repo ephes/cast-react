@@ -7,11 +7,15 @@
        data-article-date-time="{{ page.visible_date|date:"c" }}"
        data-article-author="{{ page.owner.username|title }}"
        {% if render_detail and episode_transcript_url %}data-transcript-url="{{ episode_transcript_url }}"{% endif %}
+       {# A preview of a never saved post has no id, and the transcript endpoint needs one. #}
+       {% if not page.pk %}data-no-transcripts{% endif %}
   ></div>
   {# An episode's own audio comes first, also when the body has no audio block. #}
   {# The app shows each audio once, however often its data appears. #}
-  {% if page.podcast_audio and page.pk and not render_for_feed %}
-    {% cast_custom_player page.podcast_audio page %}
+  {% if page.podcast_audio and not render_for_feed %}
+    {% if page.pk or request.is_preview %}
+      {% cast_custom_player page.podcast_audio page %}
+    {% endif %}
   {% endif %}
   {% block episode_contributors %}
     {% if render_detail and not render_for_feed and episode_contributors %}
