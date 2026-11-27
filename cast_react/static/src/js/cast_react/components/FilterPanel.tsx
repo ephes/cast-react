@@ -1,14 +1,32 @@
 // Search and filters of the post list. Every change becomes a new address
 // (`?search=…&tag_facets=…`), so a filtered list can be bookmarked and shared.
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { FormEvent, RefCallback } from "react";
 import { FILTER_KEYS, type Facet, type FacetCounts, type FilterKey, type Filters } from "../types";
 import { FilterIcon, SearchIcon } from "./icons";
 
 const SEARCH_DELAY_MS = 400;
-const FACET_LIMIT = 12;
+const FACET_LIMIT = 10;
 const MONTH_SLUG = /^\d{4}-(?:0[1-9]|1[0-2])$/;
+
+function pageLocale(): string {
+  return document.documentElement.lang.split("@", 1)[0].trim().replaceAll("_", "-") || navigator.language;
+}
+
+function facetCollator(): Intl.Collator {
+  const options = { sensitivity: "base" } as const;
+  try {
+    return new Intl.Collator(pageLocale(), options);
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    return new Intl.Collator(undefined, options);
+  }
+}
+
+function searchableName(name: string): string {
+  return name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replaceAll("ς", "σ");
+}
 
 function includeSelected(items: Facet[], selected: string): Facet[] {
   if (selected && !items.some((facet) => facet.slug === selected)) {
@@ -23,75 +41,146 @@ function FacetGroup({
   facets,
   selected,
   onSelect,
-  toggleRef,
+  onFocusLost,
 }: {
   title: string;
   noun: string;
   facets: Facet[] | undefined;
   selected: string;
   onSelect: (slug: string) => void;
-  toggleRef: RefCallback<HTMLButtonElement>;
+  onFocusLost: () => void;
 }) {
   const headingId = useId();
   const listId = useId();
   const [expanded, setExpanded] = useState(false);
-  const [focused, setFocused] = useState<Facet | null>(null);
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState<{ facet: Facet; inIndex: boolean } | null>(null);
+  const topStrip = useRef<HTMLUListElement>(null);
+  const removedControl = useRef<HTMLElement>(null);
+  const rememberFocus = useCallback<RefCallback<HTMLElement>>((element) => {
+    if (!element) return;
+    removedControl.current = null;
+    return () => {
+      const active = element.ownerDocument.activeElement;
+      if (active instanceof HTMLElement && element.contains(active)) removedControl.current = active;
+    };
+  }, []);
   const ranked = [...(facets ?? [])].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  const selectedItems = includeSelected(ranked, selected);
-  // Keep the focused button mounted if clearing a filter hides it or drops it from the counts.
-  const items = focused && !selectedItems.some((facet) => facet.slug === focused.slug)
-    ? [...selectedItems, { ...focused, count: 0 }]
-    : selectedItems;
-  if (!items.length) {
+  const canExpand = ranked.length > FACET_LIMIT;
+  useLayoutEffect(() => {
+    if (canExpand) return;
+    setFocused((current) => current?.inIndex ? null : current);
+    const control = removedControl.current;
+    removedControl.current = null;
+    if (!control) return;
+    // Wait until the new strip is mounted before moving focus from the removed index.
+    const slug = control.dataset.facetSlug;
+    const pill = slug && Array.from(topStrip.current?.querySelectorAll("button") ?? [])
+      .find((button) => button.dataset.facetSlug === slug);
+    if (pill) pill.focus();
+    else onFocusLost();
+  }, [canExpand, onFocusLost]);
+  const items = includeSelected(ranked, selected);
+  // Keep a focused choice mounted if filtering drops it from the counts.
+  const focusedFacet = focused && !items.some((facet) => facet.slug === focused.facet.slug)
+    ? { ...focused.facet, count: 0 }
+    : null;
+  const strip = items.filter(
+    (facet, index) => index < FACET_LIMIT || facet.slug === selected
+      || (!focused?.inIndex && facet.slug === focused?.facet.slug),
+  );
+  if (focusedFacet && !focused?.inIndex) strip.push(focusedFacet);
+  if (!strip.length) {
     return null;
   }
-  const collapsed = items.filter(
-    (facet, index) => index < FACET_LIMIT || facet.slug === selected || facet.slug === focused?.slug,
+  const needle = searchableName(query.trim());
+  const alphabetically = expanded && canExpand ? facetCollator().compare : null;
+  const matches = alphabetically
+    ? [...items, ...(focusedFacet && focused?.inIndex ? [focusedFacet] : [])]
+        .filter((facet) => searchableName(facet.name).includes(needle)
+          || (focused?.inIndex && facet.slug === focused.facet.slug))
+        .sort((a, b) => alphabetically(a.name, b.name))
+    : [];
+
+  const renderFacet = (facet: Facet, inIndex: boolean) => (
+    <li key={facet.slug}>
+      <button
+        type="button"
+        className={inIndex ? "cr-facet-index__item" : "cr-facet"}
+        data-facet-slug={facet.slug}
+        aria-pressed={facet.slug === selected}
+        onFocus={() => setFocused({ facet, inIndex })}
+        onBlur={() => setFocused(null)}
+        onClick={() => onSelect(facet.slug)}
+      >
+        <span>{facet.name}</span>
+        <span className="cr-facet__count" aria-label={`${facet.count} posts`}>
+          {facet.count}
+        </span>
+      </button>
+    </li>
   );
 
   return (
     <div className="cr-facets">
       <h3 id={headingId}>{title}</h3>
-      <ul id={listId} aria-labelledby={headingId}>
-        {(expanded ? items : collapsed).map((facet) => {
-          const active = facet.slug === selected;
-          return (
-            <li key={facet.slug}>
-              <button
-                type="button"
-                className="cr-facet"
-                aria-pressed={active}
-                onFocus={() => setFocused(facet)}
-                onBlur={() => setFocused(null)}
-                onClick={() => onSelect(facet.slug)}
-              >
-                <span>{facet.name}</span>
-                <span className="cr-facet__count" aria-label={`${facet.count} posts`}>
-                  {facet.count}
-                </span>
-              </button>
-            </li>
-          );
-        })}
+      <ul className="cr-facets__top" ref={topStrip} aria-labelledby={headingId}>
+        {strip.map((facet) => renderFacet(facet, false))}
       </ul>
-      {collapsed.length < items.length && (
-        <button
-          ref={toggleRef}
-          type="button"
-          className="cr-button cr-button--quiet cr-facets__toggle"
-          aria-expanded={expanded}
-          aria-controls={listId}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? "Show fewer" : `Show all ${ranked.length} ${noun}`}
-        </button>
+      {canExpand && (
+        <>
+          <button
+            ref={rememberFocus}
+            type="button"
+            className="cr-button cr-button--quiet cr-facets__toggle"
+            aria-expanded={expanded}
+            aria-controls={listId}
+            onClick={(event) => {
+              if (expanded) {
+                event.currentTarget.focus();
+                setQuery("");
+              }
+              setExpanded(!expanded);
+            }}
+          >
+            {expanded ? "Hide list" : `All ${ranked.length} ${noun}`}
+          </button>
+          <div id={listId} className="cr-facet-index" ref={rememberFocus} hidden={!expanded}>
+            {expanded && (
+              <>
+                <label className="cr-field">
+                  <span>Filter {noun}</span>
+                  <input
+                    type="search"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape" && query) {
+                        event.preventDefault();
+                        setQuery("");
+                      }
+                    }}
+                  />
+                </label>
+                {matches.length ? (
+                  <ul className="cr-facet-index__items" aria-label={`All ${noun}`}>
+                    {matches.map((facet) => renderFacet(facet, true))}
+                  </ul>
+                ) : (
+                  <p className="cr-facet-index__empty" role="status">
+                    No {noun === "tags" ? "tag" : "category"} matches
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
 }
 
 function monthFormatter(): Intl.DateTimeFormat {
-  const locale = document.documentElement.lang.split("@", 1)[0].trim().replaceAll("_", "-");
   const options: Intl.DateTimeFormatOptions = {
     month: "long",
     year: "numeric",
@@ -99,7 +188,7 @@ function monthFormatter(): Intl.DateTimeFormat {
     timeZone: "UTC",
   };
   try {
-    return new Intl.DateTimeFormat(locale || navigator.language, options);
+    return new Intl.DateTimeFormat(pageLocale(), options);
   } catch (error) {
     if (!(error instanceof RangeError)) throw error;
     return new Intl.DateTimeFormat(undefined, options);
@@ -163,14 +252,13 @@ export function FilterPanel({
   const [search, setSearch] = useState(filters.search ?? "");
   const [open, setOpen] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
-  const facetToggleRef = useCallback<RefCallback<HTMLButtonElement>>((button) => {
-    if (!button) return;
-    return () => {
-      // A results update can remove the toggle or the entire group while it has focus.
-      if (button.ownerDocument.activeElement === button) {
-        searchInput.current?.focus();
-      }
-    };
+  const dateRange = useRef<HTMLDetailsElement>(null);
+  const { date_after, date_before } = filters;
+  useLayoutEffect(() => {
+    if (dateRange.current && (date_after || date_before)) dateRange.current.open = true;
+  }, [date_after, date_before]);
+  const focusSearch = useCallback(() => {
+    searchInput.current?.focus();
   }, []);
   const timer = useRef<number | undefined>(undefined);
   const latest = useRef({ filters, onChange });
@@ -267,7 +355,7 @@ export function FilterPanel({
           facets={facetCounts?.category_facets}
           selected={filters.category_facets ?? ""}
           onSelect={(slug) => toggle("category_facets", slug)}
-          toggleRef={facetToggleRef}
+          onFocusLost={focusSearch}
         />
         <FacetGroup
           title="Tags"
@@ -275,36 +363,39 @@ export function FilterPanel({
           facets={facetCounts?.tag_facets}
           selected={filters.tag_facets ?? ""}
           onSelect={(slug) => toggle("tag_facets", slug)}
-          toggleRef={facetToggleRef}
+          onFocusLost={focusSearch}
         />
         <MonthSelect
           facets={facetCounts?.date_facets}
           selected={filters.date_facets ?? ""}
           onSelect={(slug) => set("date_facets", slug)}
         />
-        <fieldset className="cr-filters__dates">
-          <legend>Published</legend>
-          <label className="cr-field" htmlFor={`${id}-after`}>
-            <span>From</span>
-            <input
-              id={`${id}-after`}
-              type="date"
-              value={filters.date_after ?? ""}
-              max={filters.date_before || undefined}
-              onChange={(event) => set("date_after", event.target.value)}
-            />
-          </label>
-          <label className="cr-field" htmlFor={`${id}-before`}>
-            <span>Until</span>
-            <input
-              id={`${id}-before`}
-              type="date"
-              value={filters.date_before ?? ""}
-              min={filters.date_after || undefined}
-              onChange={(event) => set("date_before", event.target.value)}
-            />
-          </label>
-        </fieldset>
+        <details className="cr-filters__range" ref={dateRange}>
+          <summary>Custom date range</summary>
+          <fieldset className="cr-filters__dates">
+            <legend>Published</legend>
+            <label className="cr-field" htmlFor={`${id}-after`}>
+              <span>From</span>
+              <input
+                id={`${id}-after`}
+                type="date"
+                value={date_after ?? ""}
+                max={date_before || undefined}
+                onChange={(event) => set("date_after", event.target.value)}
+              />
+            </label>
+            <label className="cr-field" htmlFor={`${id}-before`}>
+              <span>Until</span>
+              <input
+                id={`${id}-before`}
+                type="date"
+                value={date_before ?? ""}
+                min={date_after || undefined}
+                onChange={(event) => set("date_before", event.target.value)}
+              />
+            </label>
+          </fieldset>
+        </details>
         <label className="cr-field" htmlFor={`${id}-order`}>
           <span>Order</span>
           <select id={`${id}-order`} value={filters.o ?? ""} onChange={(event) => set("o", event.target.value)}>

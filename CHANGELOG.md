@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.5
+
+- Tags and categories show the 10 most-used choices and open a searchable
+  alphabetical index with counts when there are more. Search equates Greek
+  sigma forms, and focus follows the selected choice when the index disappears.
+- Custom date ranges fold away below the month menu.
+- List rows skip the side thumbnail when the teaser already has an image,
+  including an image inside a picture element.
+- Phone headers keep appearance and feed controls beside the title and put
+  navigation links, including custom navigation lists, on one scrolling line below.
+- Custom header navigation supports nested links. Printouts of React pages
+  hide the feed and appearance controls.
+- Feed, transcript, theme chooser and other server pages use a wider,
+  centered content column.
+- The demo archive spans over six years and has about 110 tags.
+
 ## 0.0.4
 
 - Categories and tags are ordered by post count and show the 12 most common

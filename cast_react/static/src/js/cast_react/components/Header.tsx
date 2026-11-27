@@ -39,22 +39,26 @@ export function Header({ config }: { config: Config }) {
         <Link className="cr-header__title" href={config.blogUrl}>
           {config.blogTitle}
         </Link>
-        <nav className="cr-header__nav" aria-label="Site">
-          {config.navigation
-            .filter((link) => link.href !== config.blogUrl)
-            .slice(0, MAX_NAVIGATION_LINKS)
-            .map((link) => (
-              <a key={link.href} href={link.href}>
-                {link.text}
+        <div className="cr-header__controls">
+          <nav className="cr-header__nav" aria-label="Site">
+            {config.navigation
+              .filter((link) => link.href !== config.blogUrl)
+              .slice(0, MAX_NAVIGATION_LINKS)
+              .map((link) => (
+                <a key={link.href} href={link.href}>
+                  {link.text}
+                </a>
+              ))}
+          </nav>
+          <div className="cr-header__actions">
+            {config.feedUrl && (
+              <a className="cr-icon-button" href={config.feedUrl} aria-label="Feeds" title="Feeds">
+                <FeedIcon />
               </a>
-            ))}
-          {config.feedUrl && (
-            <a className="cr-icon-button" href={config.feedUrl} aria-label="Feeds" title="Feeds">
-              <FeedIcon />
-            </a>
-          )}
-          <ColorSchemeButton />
-        </nav>
+            )}
+            <ColorSchemeButton />
+          </div>
+        </div>
       </div>
     </header>
   );

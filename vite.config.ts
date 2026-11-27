@@ -35,6 +35,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    css: { include: [/\/shared\.css\?inline$/] },
     include: ["tests/**/*.test.{ts,tsx}"],
   },
 });

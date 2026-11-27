@@ -8,6 +8,7 @@ export const PLAYER_SLOT_ATTRIBUTE = "data-cast-react-player";
 
 export interface ParsedPost {
   html: string;
+  hasImage: boolean;
   meta: ArticleMeta;
   players: PlayerPayload[];
 }
@@ -112,5 +113,5 @@ export function parsePostHtml(
     }
   });
 
-  return { html: doc.body.innerHTML.trim(), meta, players };
+  return { html: doc.body.innerHTML.trim(), hasImage: doc.body.querySelector("img") !== null, meta, players };
 }

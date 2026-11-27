@@ -9,11 +9,15 @@ What you get:
 
 - Post list with search, category, tag and month filters, a date range, sort
   order and paging. Filters live in the address (`?search=…&tag_facets=…`).
-  Categories and tags start with the 12 most common choices and offer an
-  expansion toggle when more choices are available. The focused choice stays
-  visible when a filter is cleared. The month menu groups by
-  Gregorian year and uses the page language for month names, with a browser
-  default fallback for invalid language codes.
+  Categories and tags show the 10 most common choices, plus the selected or
+  focused choice. **All N tags** or **All N categories** opens a compact
+  alphabetical index with post counts beneath those choices. Type in the
+  index field to find a name regardless of case, accents or Greek sigma form.
+  Press Escape in the field to clear it. If selecting a choice removes the
+  index, focus moves to that choice in the top row. The month menu lists post
+  counts by Gregorian year, newest first, with localized month names.
+  **Custom date range** folds away the From and Until fields and opens when
+  a range is set.
 - Post and episode pages with comments (including replies) and a lightbox for
   galleries.
 - An audio player made for this theme: the seek bar is divided into chapters,
@@ -101,7 +105,8 @@ is how django-cast discovers themes.
   opens in a lightbox.
 - `page.html` provides the header, prose layout and a small `page.ts` Vite
   entry for Django-rendered pages. It shares styles and the saved appearance
-  choice with the app. `feed_detail.html` lists listening services and feeds,
+  choice with the app. On phones, header links in custom `<ul>` lists scroll
+  horizontally in a single row. `feed_detail.html` lists listening services and feeds,
   `transcript.html` renders the full transcript, and `select_theme.html`
   renders the theme chooser partial for htmx.
 - A page that extends `cast/react/base.html` without a `blog` in its context
@@ -154,6 +159,9 @@ just example-run    # http://localhost:8000/ground-loop/
 
 django-vite reads the manifest when Django starts, so restart `example-run`
 after `just js-build`.
+
+The demo includes about 110 tags, three categories and over six years of
+monthly archive posts. The recent podcast episodes include transcripts.
 
 ### Vite development server
 

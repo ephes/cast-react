@@ -49,7 +49,7 @@ function PostRow({ post, config }: { post: Post; config: Config }) {
   return (
     <li className="cr-post-row">
       <article>
-        {cover && (
+        {cover && !parsed.hasImage && (
           <Link className="cr-post-row__cover" href={href} prefetch={prefetch} tabIndex={-1} aria-hidden="true">
             <img src={cover} alt="" width={160} height={160} loading="lazy" decoding="async" />
           </Link>

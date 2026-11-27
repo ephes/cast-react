@@ -282,22 +282,35 @@ time {
   text-decoration: none;
 }
 
-.cr-header__nav {
+.cr-header__controls,
+.cr-header__nav,
+.cr-header__actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: 0 0.25rem;
+}
+
+.cr-header__nav {
+  flex-wrap: wrap;
+  justify-content: flex-end;
   font-size: 0.9375rem;
 }
 
-.cr-header__nav > a:not(.cr-icon-button) {
+.cr-header__nav:not(:has(a)) {
+  display: none;
+}
+
+.cr-header__actions {
+  flex: none;
+}
+
+.cr-header__nav > a {
   padding: 0.5rem 0.625rem;
   color: var(--cr-muted);
   text-decoration: none;
 }
 
-.cr-header__nav > a:not(.cr-icon-button):hover {
+.cr-header__nav > a:hover {
   color: var(--cr-ink);
   text-decoration: underline;
 }
@@ -314,13 +327,53 @@ time {
 
 @media (max-width: 35rem) {
   .cr-header__inner {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.25rem 1rem;
     padding-block: 0.375rem;
   }
 
+  .cr-header__controls {
+    display: contents;
+  }
+
+  .cr-header__title {
+    overflow-wrap: anywhere;
+  }
+
+  .cr-header__actions {
+    grid-area: 1 / 2;
+  }
+
   .cr-header__nav {
-    margin-inline-start: auto;
+    grid-column: 1 / -1;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+
+  .cr-header__nav > ul {
+    display: flex;
+    flex: none;
+    gap: inherit;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cr-header__nav > ul > li {
+    display: flex;
+  }
+
+  .cr-header__nav > ul > li > a {
+    padding: 0.5rem 0.625rem;
+  }
+
+  .cr-header__nav > a:focus-visible,
+  .cr-header__nav > ul > li > a:focus-visible {
+    outline-offset: -2px;
   }
 }
 
@@ -460,13 +513,14 @@ time {
 /* Server-rendered pages ------------------------------------------------- */
 
 .cr-page-content {
-  max-width: calc(var(--cr-measure) + 2 * var(--cr-gutter));
+  max-width: calc(46rem + 2 * var(--cr-gutter));
 }
 
 .cr-page-content h1 {
   margin-top: 0;
   font-size: clamp(2rem, 1.35rem + 3vw, 3rem);
   line-height: 1.1;
+  text-wrap: wrap;
 }
 
 .cr-page-content :where(form, label) {
@@ -546,11 +600,6 @@ time {
   margin: 0;
 }
 
-.cr-transcript-page {
-  max-width: 42rem;
-  margin-inline: auto;
-}
-
 .cr-transcript-page header p,
 .cr-transcript-page__segment p + p {
   margin-top: 0.5rem;
@@ -579,7 +628,6 @@ time {
 }
 
 .cast-select-theme .list-unstyled {
-  max-width: 26rem;
   margin-bottom: 0;
 }
 

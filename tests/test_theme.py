@@ -276,7 +276,12 @@ def rendered_page(response) -> str:
     html = response.content.decode()
     assert 'class="cr-header"' in html
     assert 'class="cr-main cr-prose cr-page-content"' in html
-    assert 'class="cr-icon-button" data-appearance' in html
+    assert re.search(
+        r'<div class="cr-header__controls">\s*<nav class="cr-header__nav"[^>]*>'
+        r'.*?</nav>\s*<div class="cr-header__actions">.*?<button[^>]*data-appearance',
+        html,
+        re.DOTALL,
+    )
     assert re.search(r'src="/static/cast_react/page-[\w-]+\.js"', html)
     assert re.search(r'href="/static/cast_react/[\w-]+\.css"', html)
     assert 'id="app"' not in html
@@ -296,7 +301,7 @@ def test_feed_detail_uses_the_page_layout(client, podcast, settings):
     assert f'class="cr-header__title" href="{blog.url}"' in html
     rss_url = reverse("cast:latest_entries_feed", kwargs={"slug": blog.slug})
     atom_url = reverse("cast:latest_entries_atom_feed", kwargs={"slug": blog.slug})
-    assert f'class="cr-icon-button" href="{rss_url}"' in html
+    assert re.search(rf'<div class="cr-header__actions">\s*<a class="cr-icon-button" href="{rss_url}"', html)
     assert "Where to listen" in html
     assert '<a href="https://example.org/listen">Spotify</a>' in html
     assert f'<a href="{rss_url}">RSS</a>' in html
@@ -370,7 +375,7 @@ def test_site_page_content_block_renders_without_a_blog(client, db):
     assert "<title>About us</title>" in html
     assert "<h1>About us</h1><p>Our site.</p>" in html
     assert 'class="cr-header__title" href="/subsite/">Our site</a>' in html
-    assert '<a href="/contact/">Contact</a>' in html
+    assert re.search(r'<nav class="cr-header__nav"[^>]*>\s*<a href="/contact/">Contact</a>\s*</nav>', html)
     assert "<style>/* site styles */</style>" in html
     assert "<script>/* site script */</script>" in html
 

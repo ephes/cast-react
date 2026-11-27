@@ -178,7 +178,80 @@ ARCHIVE_TOPICS = [
     ("Content security", "web"),
     ("Data exports", "backend"),
 ]
-ARCHIVE_POSTS = 48
+ARCHIVE_TAGS = (
+    "Absorption",
+    "Access logs",
+    "Ärger",
+    "Audio interfaces",
+    "Audio meters",
+    "Browser storage",
+    "Build tools",
+    "Captions",
+    "CDNs",
+    "Compression",
+    "Connection limits",
+    "Content negotiation",
+    "Cookies",
+    "Corpus search",
+    "CSS layers",
+    "Custom domains",
+    "Dashboards",
+    "Data retention",
+    "Deployment",
+    "DNS",
+    "Dynamic range",
+    "Email digests",
+    "Equalizers",
+    "Error handling",
+    "Feed validation",
+    "File formats",
+    "Font loading",
+    "Full-text indexes",
+    "Gain staging",
+    "Git hooks",
+    "Headless browsers",
+    "Headroom",
+    "HTML forms",
+    "HTTP caching",
+    "Image captions",
+    "Image compression",
+    "Keyboard shortcuts",
+    "Latency",
+    "Link rot",
+    "Local development",
+    "Logging",
+    "Lossless audio",
+    "Metadata",
+    "Microphone stands",
+    "Middleware",
+    "Mixing",
+    "Mobile layout",
+    "Monitoring",
+    "Multitrack audio",
+    "Network timeouts",
+    "Object storage",
+    "Optical cables",
+    "Pagination",
+    "Phantom power",
+    "Privacy",
+    "Profiling",
+    "Redirects",
+    "Reflection filters",
+    "Release notes",
+    "Request queues",
+    "Reverb",
+    "Sample rates",
+    "Search ranking",
+    "Session storage",
+    "Signal levels",
+    "Site navigation",
+    "Sound checks",
+    "Structured data",
+    "TLS certificates",
+    "Übersetzung",
+    "Überwachung",
+    "Webmentions",
+)
 
 PALETTES = [
     ((38, 70, 120), (214, 166, 60)),
@@ -403,22 +476,19 @@ class Command(BaseCommand):
 
         self._archive(podcast, owner, categories, now, rng)
         self.stdout.write(
-            self.style.SUCCESS(f"Seeded {total} episodes and {len(POSTS) + ARCHIVE_POSTS} posts at {podcast.url}")
+            self.style.SUCCESS(f"Seeded {total} episodes and {len(POSTS) + len(ARCHIVE_TAGS)} posts at {podcast.url}")
         )
 
     @transaction.atomic
     def _archive(self, podcast: Podcast, owner, categories: dict, now: dt.datetime, rng: random.Random) -> None:
         """Add one inexpensive text post per month, with a few much more common tags."""
-        notes = ("first notes", "what changed", "what held up")
-        for index in range(ARCHIVE_POSTS):
-            topic_index = index % len(ARCHIVE_TOPICS)
-            topic, category = ARCHIVE_TOPICS[topic_index]
-            note = notes[index // len(ARCHIVE_TOPICS)]
+        for index, tag in enumerate(ARCHIVE_TAGS):
+            topic, category = ARCHIVE_TOPICS[index % len(ARCHIVE_TOPICS)]
             year, month = divmod(now.year * 12 + now.month - 1 - (index + 7), 12)
             teaser = rng.choice(SENTENCES)
             body = [{"type": "overview", "value": [{"type": "paragraph", "value": f"<p>{teaser}</p>"}]}]
             post = Post(
-                title=f"{topic}: {note}",
+                title=f"{topic}: {tag}",
                 slug=f"archive-{year}-{month + 1:02d}",
                 owner=owner,
                 visible_date=now.replace(year=year, month=month + 1, day=12),
@@ -427,8 +497,8 @@ class Command(BaseCommand):
             )
             podcast.add_child(instance=post)
             post.categories.add(categories[category])
-            tags = [topic]
-            for tag, interval in (("behind-the-scenes", 1), ("open-web", 2), ("performance", 4), ("editing", 8)):
+            tags = [topic, tag, "behind-the-scenes", "open-web" if index % 2 == 0 else "recording"]
+            for tag, interval in (("performance", 4), ("editing", 8)):
                 if index % interval == 0:
                     tags.append(tag)
             post.tags.add(*tags)

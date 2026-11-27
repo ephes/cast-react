@@ -3,6 +3,7 @@ import { clearJsonCache } from "@/api";
 import { App } from "@/components/App";
 import type { Config } from "@/config";
 import { resetPlayerForTests } from "@/player/store";
+import sharedStyles from "../css/cast_react/shared.css?inline";
 import { FakeAudio, cleanup, click, jsonResponse, render, settle } from "./helpers";
 
 const config: Config = {
@@ -143,7 +144,73 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+it("shows nested header links in a scrolling row on phones and hides empty navigation", async () => {
+  const view = await render(
+    <>
+      <style>{sharedStyles}</style>
+      <nav className="cr-header__nav" aria-label="Custom site">
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/about/">About</a></li>
+        </ul>
+      </nav>
+      <nav className="cr-header__nav" aria-label="Empty site" />
+    </>,
+  );
+  const [customNav, emptyNav] = view.querySelectorAll("nav");
+  expect(getComputedStyle(customNav).display).toBe("flex");
+  expect(getComputedStyle(emptyNav).display).toBe("none");
+
+  const phone = Array.from(view.querySelector("style")!.sheet!.cssRules).find(
+    (rule) => rule instanceof CSSMediaRule && rule.conditionText === "(max-width: 35rem)",
+  ) as CSSMediaRule;
+  const rules = Array.from(phone.cssRules) as CSSStyleRule[];
+  expect(rules.find((rule) => rule.selectorText === ".cr-header__nav")?.style.overflowX).toBe("auto");
+  expect(rules.find((rule) => rule.selectorText === ".cr-header__nav > ul")?.style.display).toBe("flex");
+  expect(rules.find((rule) => rule.selectorText === ".cr-header__nav > ul > li")?.style.display).toBe("flex");
+});
+
 describe("post list", () => {
+  it("keeps the nav links separate from the header actions", async () => {
+    const view = await render(<App config={{ ...config, navigation: [
+      { href: "/show/", text: "Ground Loop" },
+      { href: "/hello/", text: "Claas und Nora sagen Hallo" },
+      { href: "/ephes/", text: "~ephes" },
+    ] }} />);
+    await settle();
+    const nav = view.querySelector(".cr-header__nav")!;
+    expect(Array.from(nav.querySelectorAll("a"), (link) => link.textContent)).toEqual([
+      "Claas und Nora sagen Hallo", "~ephes",
+    ]);
+    const actions = nav.nextElementSibling!;
+    expect(actions.className).toBe("cr-header__actions");
+    expect(actions.querySelector('a[aria-label="Feeds"]')?.getAttribute("href")).toBe("/feed/");
+    expect(actions.querySelector("button")?.getAttribute("aria-label")).toContain("Change");
+  });
+
+  it.each([
+    ["a teaser image", '<img src="/cover.jpg" alt="Cover">', false],
+    ["a teaser picture with an image", '<picture><source srcset="/cover.webp"><img src="/cover.jpg"></picture>', false],
+    ["a teaser picture with only a source", '<picture><source srcset="/cover.webp"></picture>', true],
+    ["an image removed with the player", '<cast-audio-player><img src="/cover.jpg"></cast-audio-player>', true],
+    ["no teaser image", "", true],
+  ])("renders the side thumbnail correctly with %s", async (_name, extra, showsThumbnail) => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({
+      meta: { total_count: 1 },
+      items: [{
+        ...post(1, "episode-one", "Episode one"),
+        cover_image_poster_url: "/cover.jpg",
+        html_overview: body("Teaser one", playerMarkup + extra),
+      }],
+    })));
+    const view = await open("/show/");
+    const row = view.querySelector(".cr-post-row")!;
+    const thumbnail = row.querySelector(".cr-post-row__cover img");
+    expect(thumbnail?.getAttribute("src") ?? null).toBe(showsThumbnail ? "/cover.jpg" : null);
+    expect(Boolean(row.querySelector(".cr-prose--teaser img"))).toBe(!showsThumbnail);
+    expect(row.querySelector(".cr-play-episode")).not.toBeNull();
+  });
+
   it("shows the blog, its posts and the paging controls", async () => {
     const view = await open("/show/");
     expect(view.querySelector("h1")?.textContent).toBe("Ground Loop");

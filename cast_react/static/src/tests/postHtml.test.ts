@@ -88,6 +88,7 @@ describe("parsePostHtml", () => {
   it("copes with empty input", () => {
     expect(parsePostHtml("", { playerSlots: "none" })).toEqual({
       html: "",
+      hasImage: false,
       meta: { date: "", dateTime: "", author: "", transcriptUrl: "" },
       players: [],
     });
