@@ -1,0 +1,23 @@
+{# Part of django-cast's theme contract. The React app renders its own paging controls; #}
+{# this server-rendered version works with plain links. #}
+{% if is_paginated %}
+  <nav aria-label="Pages">
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+        <li><a rel="prev" href="?page={{ page_obj.previous_page_number }}{{ parameters }}">Newer</a></li>
+      {% endif %}
+      {% for num in page_range %}
+        {% if num == page_obj.paginator.ELLIPSIS %}
+          <li><span>{{ num }}</span></li>
+        {% elif num == page_obj.number %}
+          <li><span aria-current="page">{{ num }}</span></li>
+        {% else %}
+          <li><a href="?page={{ num }}{{ parameters }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+        <li><a rel="next" href="?page={{ page_obj.next_page_number }}{{ parameters }}">Older</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endif %}

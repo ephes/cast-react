@@ -1,0 +1,67 @@
+{% load static %}
+{% load django_vite %}
+{% load wagtailcore_tags %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
+  <head>
+    {% block meta %}
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="color-scheme" content="light dark">
+      {% block robots %}
+        {% if blog.noindex %}
+          <meta name="robots" content="noindex, nofollow">
+        {% else %}
+          <meta name="robots" content="index, follow">
+        {% endif %}
+      {% endblock robots %}
+      {% block title %}<title>{{ blog.seo_title|default:blog.title }}</title>{% endblock title %}
+      {% block description %}
+        <meta name="description" content="{{ blog.search_description|default:blog.title }}">
+      {% endblock description %}
+    {% endblock meta %}
+    {% block feeds %}
+      {% if follow_links.rss %}
+        <link rel="alternate" type="application/rss+xml" title="{{ blog.title }}" href="{{ follow_links.rss }}">
+      {% endif %}
+    {% endblock feeds %}
+    {% block css %}{% endblock css %}
+    {% block javascript %}
+      {% vite_react_refresh app="cast_react" %}
+      {% vite_hmr_client app="cast_react" %}
+      {% vite_asset 'js/cast_react/main.tsx' app="cast_react" %}
+    {% endblock javascript %}
+  </head>
+  <body>
+    {# Everything the React app needs to know about this blog, in one element. #}
+    <script id="cast-react-configuration" type="application/json"
+            {% block reactjs-data %}
+              data-blog-url="{{ blog.url }}" {# base path of the client-side routes #}
+              data-blog-id="{{ blog.pk }}" {# posts endpoint: child_of=blog.pk #}
+              data-blog-title="{{ blog.title }}"
+              data-blog-subtitle="{{ blog.subtitle|default:'' }}"
+              data-csrf-token="{{ csrf_token }}" {# posting comments, switching themes #}
+              data-pagination-page-size="{{ blog.pagination_page_size }}"
+              data-wagtail-api-pages-url="{{ blog.wagtail_api_pages_url }}"
+              data-api-facet-counts-url="{{ blog.facet_counts_api_url }}"
+              data-post-comment-url="{{ blog.comment_post_url }}"
+              data-api-theme-list-url="{{ blog.theme_list_api_url }}"
+              data-api-theme-update-url="{{ blog.theme_update_api_url }}"
+              data-feed-url="{{ follow_links.feed_detail|default:follow_links.rss|default:'' }}"
+            {% endblock reactjs-data %}
+    ></script>
+    <template id="cast-react-blog-description">{{ blog.description|richtext }}</template>
+    <template id="cast-react-navigation">
+      {% for url, text in root_nav_links %}<a href="{{ url }}">{{ text }}</a>{% endfor %}
+    </template>
+    {% block main %}
+      <div id="app"></div>
+      <noscript>
+        <p>
+          <strong>{{ blog.title }}</strong> needs JavaScript to show its posts.
+          {% if follow_links.rss %}You can also read it in a <a href="{{ follow_links.rss }}">feed reader</a>.{% endif %}
+        </p>
+      </noscript>
+    {% endblock main %}
+  </body>
+</html>

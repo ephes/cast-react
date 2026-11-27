@@ -1,0 +1,18 @@
+{% extends "./post.html" %}
+
+{% block social_meta %}
+  {% if episode.podcast_audio and social_cover_image_url %}
+    {% include "cast/includes/post_social_meta.html" with twitter_card="player" structured_data_type="PodcastEpisode" %}
+    <meta name="twitter:player" content="{{ player_url }}">
+    <meta name="twitter:player:stream" content="{{ podcast_audio_url }}">
+    <meta name="twitter:player:stream:content_type" content="audio/mp4">
+    <meta name="twitter:player:width" content="480">
+    <meta name="twitter:player:height" content="240">
+    <meta property="og:audio" content="{{ podcast_audio_url }}">
+  {% elif episode.podcast_audio %}
+    {% include "cast/includes/post_social_meta.html" with structured_data_type="PodcastEpisode" %}
+    <meta property="og:audio" content="{{ podcast_audio_url }}">
+  {% else %}
+    {{ block.super }}
+  {% endif %}
+{% endblock social_meta %}

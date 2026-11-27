@@ -1,0 +1,12 @@
+{% extends "./base.html" %}
+
+{% block title %}<title>{{ page.seo_title|default:page.title }}</title>{% endblock title %}
+
+{% block description %}
+  <meta name="description" content="{{ page.search_description|default:page.title }}">
+{% endblock description %}
+
+{% block reactjs-data %}
+  {{ block.super }}
+  data-route-name="PostList"
+{% endblock reactjs-data %}

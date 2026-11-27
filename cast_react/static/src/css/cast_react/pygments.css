@@ -1,0 +1,80 @@
+/* Code highlighting for Pygments markup: the "default" style in light mode and
+   "github-dark" in dark mode, combined per token with light-dark(). */
+.highlight .bp { color: light-dark(#008000, #e6edf3) }
+.highlight .c { color: light-dark(#3D7B7B, #8b949e); font-style: italic }
+.highlight .c1 { color: light-dark(#3D7B7B, #8b949e); font-style: italic }
+.highlight .ch { color: light-dark(#3D7B7B, #8b949e); font-style: italic }
+.highlight .cm { color: light-dark(#3D7B7B, #8b949e); font-style: italic }
+.highlight .cp { color: light-dark(#9C6500, #8b949e); font-weight: 600; font-style: italic }
+.highlight .cpf { color: light-dark(#3D7B7B, #8b949e); font-style: italic }
+.highlight .cs { color: light-dark(#3D7B7B, #8b949e); font-weight: 600; font-style: italic }
+.highlight .dl { color: light-dark(#BA2121, #79c0ff) }
+.highlight .err { color: light-dark(currentColor, #f85149) }
+.highlight .esc { color: light-dark(currentColor, #e6edf3) }
+.highlight .fm { color: light-dark(#0000FF, #d2a8ff); font-weight: 600 }
+.highlight .g { color: light-dark(currentColor, #e6edf3) }
+.highlight .gd { color: light-dark(#A00000, #ffa198) }
+.highlight .ge { color: light-dark(currentColor, #e6edf3); font-style: italic }
+.highlight .ges { color: light-dark(currentColor, #e6edf3); font-weight: 600; font-style: italic }
+.highlight .gh { color: light-dark(#000080, #79c0ff); font-weight: 600 }
+.highlight .gi { color: light-dark(#008400, #56d364) }
+.highlight .go { color: light-dark(#717171, #8b949e) }
+.highlight .gp { color: light-dark(#000080, #8b949e); font-weight: 600 }
+.highlight .gr { color: light-dark(#E40000, #ffa198) }
+.highlight .gs { color: light-dark(currentColor, #e6edf3); font-weight: 600 }
+.highlight .gt { color: light-dark(#0044DD, #ff7b72) }
+.highlight .gu { color: light-dark(#800080, #79c0ff); font-weight: 600 }
+.highlight .il { color: light-dark(#666666, #a5d6ff) }
+.highlight .k { color: light-dark(#008000, #ff7b72); font-weight: 600 }
+.highlight .kc { color: light-dark(#008000, #79c0ff); font-weight: 600 }
+.highlight .kd { color: light-dark(#008000, #ff7b72); font-weight: 600 }
+.highlight .kn { color: light-dark(#008000, #ff7b72); font-weight: 600 }
+.highlight .kp { color: light-dark(#008000, #79c0ff) }
+.highlight .kr { color: light-dark(#008000, #ff7b72); font-weight: 600 }
+.highlight .kt { color: light-dark(#B00040, #ff7b72) }
+.highlight .l { color: light-dark(currentColor, #a5d6ff) }
+.highlight .ld { color: light-dark(currentColor, #79c0ff) }
+.highlight .m { color: light-dark(#666666, #a5d6ff) }
+.highlight .mb { color: light-dark(#666666, #a5d6ff) }
+.highlight .mf { color: light-dark(#666666, #a5d6ff) }
+.highlight .mh { color: light-dark(#666666, #a5d6ff) }
+.highlight .mi { color: light-dark(#666666, #a5d6ff) }
+.highlight .mo { color: light-dark(#666666, #a5d6ff) }
+.highlight .n { color: light-dark(currentColor, #e6edf3) }
+.highlight .na { color: light-dark(#687822, #e6edf3) }
+.highlight .nb { color: light-dark(#008000, #e6edf3) }
+.highlight .nc { color: light-dark(#0000FF, #f0883e); font-weight: 600 }
+.highlight .nd { color: light-dark(#AA22FF, #d2a8ff); font-weight: 600 }
+.highlight .ne { color: light-dark(#CB3F38, #f0883e); font-weight: 600 }
+.highlight .nf { color: light-dark(#0000FF, #d2a8ff); font-weight: 600 }
+.highlight .ni { color: light-dark(#717171, #ffa657); font-weight: 600 }
+.highlight .nl { color: light-dark(#767600, #79c0ff); font-weight: 600 }
+.highlight .nn { color: light-dark(#0000FF, #ff7b72); font-weight: 600 }
+.highlight .no { color: light-dark(#880000, #79c0ff); font-weight: 600 }
+.highlight .nt { color: light-dark(#008000, #7ee787); font-weight: 600 }
+.highlight .nv { color: light-dark(#19177C, #79c0ff) }
+.highlight .nx { color: light-dark(currentColor, #e6edf3) }
+.highlight .o { color: light-dark(#666666, #ff7b72); font-weight: 600 }
+.highlight .ow { color: light-dark(#AA22FF, #ff7b72); font-weight: 600 }
+.highlight .p { color: light-dark(currentColor, #e6edf3) }
+.highlight .pm { color: light-dark(currentColor, #e6edf3) }
+.highlight .py { color: light-dark(currentColor, #79c0ff) }
+.highlight .s { color: light-dark(#BA2121, #a5d6ff) }
+.highlight .s1 { color: light-dark(#BA2121, #a5d6ff) }
+.highlight .s2 { color: light-dark(#BA2121, #a5d6ff) }
+.highlight .sa { color: light-dark(#BA2121, #79c0ff) }
+.highlight .sb { color: light-dark(#BA2121, #a5d6ff) }
+.highlight .sc { color: light-dark(#BA2121, #a5d6ff) }
+.highlight .sd { color: light-dark(#BA2121, #a5d6ff); font-style: italic }
+.highlight .se { color: light-dark(#AA5D1F, #79c0ff); font-weight: 600 }
+.highlight .sh { color: light-dark(#BA2121, #79c0ff) }
+.highlight .si { color: light-dark(#A45A77, #a5d6ff); font-weight: 600 }
+.highlight .sr { color: light-dark(#A45A77, #79c0ff) }
+.highlight .ss { color: light-dark(#19177C, #a5d6ff) }
+.highlight .sx { color: light-dark(#008000, #a5d6ff) }
+.highlight .vc { color: light-dark(#19177C, #79c0ff) }
+.highlight .vg { color: light-dark(#19177C, #79c0ff) }
+.highlight .vi { color: light-dark(#19177C, #79c0ff) }
+.highlight .vm { color: light-dark(#19177C, #79c0ff) }
+.highlight .w { color: light-dark(#bbbbbb, #6e7681) }
+.highlight .x { color: light-dark(currentColor, #e6edf3) }

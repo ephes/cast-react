@@ -1,0 +1,32 @@
+<div class="cast-gallery">
+  <ul class="cast-gallery-list">
+    {% for entry in gallery_entries %}
+      {% with image=entry.image %}
+        <li class="cast-gallery-item">
+          {# A plain link to the large picture: opens it without JavaScript, the React app turns it into a lightbox. #}
+          <a class="cast-gallery-link"
+             href="{{ image.modal.src.jpeg }}"
+             data-modal-srcset="{{ image.modal.srcset.jpeg }}"
+             data-modal-srcset-avif="{{ image.modal.srcset.avif }}"
+             data-modal-sizes="{{ image.modal.sizes }}"
+             data-modal-width="{{ image.modal.width }}"
+             data-modal-height="{{ image.modal.height }}"
+             {% if entry.caption %}data-caption="{{ entry.caption }}"{% endif %}>
+            <picture>
+              <source srcset="{{ image.thumbnail.srcset.avif }}" type="image/avif" sizes="{{ image.thumbnail.sizes }}">
+              <img class="cast-gallery-thumbnail"
+                   alt="{{ image.default_alt_text }}"
+                   src="{{ image.thumbnail.src.jpeg }}"
+                   srcset="{{ image.thumbnail.srcset.jpeg }}"
+                   sizes="{{ image.thumbnail.sizes }}"
+                   width="{{ image.thumbnail.width }}"
+                   height="{{ image.thumbnail.height }}"
+                   loading="lazy">
+            </picture>
+          </a>
+          {% if entry.caption %}<p class="cast-gallery-caption">{{ entry.caption }}</p>{% endif %}
+        </li>
+      {% endwith %}
+    {% endfor %}
+  </ul>
+</div>

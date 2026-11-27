@@ -1,0 +1,22 @@
+{% extends "./base.html" %}
+
+{% block meta %}
+  {{ block.super }}
+  <link rel="canonical" href="{{ absolute_page_url }}">
+  {% block social_meta %}
+    {% include "cast/includes/post_social_meta.html" %}
+  {% endblock social_meta %}
+{% endblock meta %}
+
+{% block title %}<title>{{ page.seo_title|default:page.title }}</title>{% endblock title %}
+
+{% block description %}
+  <meta name="description" content="{{ page.search_description|default:page.title }}">
+{% endblock description %}
+
+{% block reactjs-data %}
+  {{ block.super }}
+  data-route-name="PostDetail"
+  data-post-slug="{{ page.slug }}" {# slug parameter of the detail route #}
+  data-page-type="{{ page.page_type }}" {# type parameter of the pages API #}
+{% endblock reactjs-data %}

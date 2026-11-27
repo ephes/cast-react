@@ -1,0 +1,23 @@
+{% load wagtailcore_tags %}
+{# Rendered by the pages API (html_overview / html_detail); the React app places this markup in the page. #}
+<article>
+  <div class="cast-react-article-data" hidden
+       data-article-date="{{ page.visible_date|date }}"
+       data-article-date-time="{{ page.visible_date|date:"c" }}"
+       data-article-author="{{ page.owner.username|title }}"
+       {% if render_detail and episode_transcript_url %}data-transcript-url="{{ episode_transcript_url }}"{% endif %}
+  ></div>
+  {% block episode_contributors %}
+    {% if render_detail and not render_for_feed and episode_contributors %}
+      {% include "cast/contributors.html" %}
+    {% endif %}
+  {% endblock episode_contributors %}
+  {% for block in page.body %}
+    {% if block.block_type != "detail" or render_detail %}
+      <section class="block-{{ block.block_type }}">
+        {% include_block block %}
+      </section>
+      {% block detail_link %}{% endblock %}
+    {% endif %}
+  {% endfor %}
+</article>
