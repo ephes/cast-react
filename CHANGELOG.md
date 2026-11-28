@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.12
+
+- The post list has its own podcast-app layout, so it no longer looks like
+  cast-vue: on wide screens the left column shows the show (cover art, title,
+  description, podcast apps, follow links) above search and filters, and the
+  episodes are cards on the right, visible without scrolling. Phones get a
+  compact show header with the cover beside the title.
+- Follow links (Mastodon, LinkedIn, ...) now appear right below the podcast
+  apps and in a **Follow the show** section on the subscribe page (**Follow**
+  on a written blog's feeds page), not only in the footer.
+- The subscription data includes the podcast cover (`coverUrl`).
+
 ## 0.0.11
 
 - The subscribe page recommends the M4A (AAC) feed instead of MP3: AAC sounds

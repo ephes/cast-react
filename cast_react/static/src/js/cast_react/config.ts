@@ -16,6 +16,8 @@ export interface Subscribe {
   isPodcast: boolean;
   podcastRssUrl: string;
   blogRssUrl: string;
+  // The podcast artwork, shown beside the show title.
+  coverUrl: string;
   platformLinks: { id: PlatformId; label: string; icon: (typeof platformIcons)[PlatformId]; url: string }[];
   followLinks: { label: string; url: string; rel: string }[];
 }
@@ -89,6 +91,7 @@ function readSubscribe(doc: Document): Subscribe | null {
       feedPageUrl: safeLink(data.feedPageUrl),
       podcastRssUrl: safeLink(data.podcastRssUrl),
       blogRssUrl: safeLink(data.blogRssUrl),
+      coverUrl: data.isPodcast ? safeLink(data.coverUrl) : "",
       platformLinks,
       followLinks,
     };

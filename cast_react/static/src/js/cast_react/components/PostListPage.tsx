@@ -12,6 +12,7 @@ import { formatDuration } from "../time";
 import type { FacetCountsFromApi, Filters, PlayerPayload, Post, PostsFromApi } from "../types";
 import { FILTER_KEYS } from "../types";
 import { FilterPanel } from "./FilterPanel";
+import { FollowLinks } from "./FollowLinks";
 import { Pagination } from "./Pagination";
 import { PostContent } from "./PostContent";
 import { SubscribeLinks } from "./SubscribeLinks";
@@ -119,13 +120,19 @@ export function PostListPage({ config, filters, page }: { config: Config; filter
 
   return (
     <div className="cr-list">
-      <div className="cr-list__intro">
-        <h1>{config.blogTitle}</h1>
-        {config.blogSubtitle && <p className="cr-list__subtitle">{config.blogSubtitle}</p>}
+      <div className="cr-list__intro cr-show">
+        {config.subscribe?.coverUrl && (
+          <img className="cr-show__cover" src={config.subscribe.coverUrl} alt="" width={320} height={320} decoding="async" />
+        )}
+        <div className="cr-show__heading">
+          <h1>{config.blogTitle}</h1>
+          {config.blogSubtitle && <p className="cr-list__subtitle">{config.blogSubtitle}</p>}
+        </div>
         {config.blogDescriptionHtml && (
           <div className="cr-prose cr-list__description" dangerouslySetInnerHTML={{ __html: config.blogDescriptionHtml }} />
         )}
         <SubscribeLinks config={config} />
+        <FollowLinks config={config} />
       </div>
       <FilterPanel filters={filters} facetCounts={facets.data?.facet_counts ?? null} onChange={changeFilters} />
       <section className="cr-list__posts" aria-label="Posts" aria-busy={posts.loading}>

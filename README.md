@@ -7,6 +7,11 @@ It is the React counterpart of [`cast-vue`](https://github.com/ephes/cast-vue).
 
 What you get:
 
+- A podcast-app layout: on wide screens the left column is the show itself
+  (cover art, title, description, podcast app buttons and **Follow** links such
+  as Mastodon and LinkedIn) with the search and filters below it; the episodes
+  are cards in the right column. Phones show a compact show header with the
+  cover beside the title.
 - Post list with search, category, tag and month filters, a date range, sort
   order and paging. Filters live in the address (`?search=…&tag_facets=…`).
   Categories and tags show the 10 most common choices, plus the selected or
@@ -24,7 +29,10 @@ What you get:
 - Podcasts have a **Subscribe** link in the header and listening links on the
   post list and on episodes. The subscribe page has podcast apps, a copyable
   RSS URL for the recommended format, alternative audio formats, and RSS and Atom feeds for written
-  posts. Written blogs use **Feeds** and can show the same footer follow links.
+  posts. Configured follow links (Mastodon, LinkedIn, GitHub, Bluesky, e-mail)
+  appear below the podcast apps on the post list, in a **Follow the show**
+  section on the subscribe page and in the footer. Written blogs use **Feeds**
+  and show the same follow links (the feeds page section is called **Follow**).
 - An audio player made for this theme: the seek bar is divided into chapters,
   with a chapter list, a transcript you can search and that follows playback,
   playback speed, resume, and links that start at a given time (`?t=754`).
@@ -47,7 +55,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.11"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.12"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player

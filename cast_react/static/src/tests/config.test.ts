@@ -21,6 +21,7 @@ describe("readConfig", () => {
       feedPageUrl: "/show/feed/",
       podcastRssUrl: "https://podcast.example.org/show/feed/podcast/mp3/rss.xml",
       blogRssUrl: "//other.example.org/rss.xml",
+      coverUrl: "https://podcast.example.org/media/cover.png",
       platformLinks: [
         { id: "apple_podcasts", label: "Apple Podcasts", url: "https://podcast.example.org/apple" },
         { id: "spotify", label: "Spotify", url: "javascript:alert(1)" },
@@ -44,12 +45,18 @@ describe("readConfig", () => {
       feedPageUrl: "/show/feed/",
       podcastRssUrl: "https://podcast.example.org/show/feed/podcast/mp3/rss.xml",
       blogRssUrl: "",
+      coverUrl: "https://podcast.example.org/media/cover.png",
       platformLinks: [{ id: "apple_podcasts", label: "Apple Podcasts", icon: "podcast", url: "https://podcast.example.org/apple" }],
       followLinks: [
         { label: "Mastodon", url: "https://social.example.org/@groundloop", rel: "me" },
         { label: "E-mail", url: "mailto:hello@example.org", rel: "" },
       ],
     });
+  });
+
+  it("drops an unsafe cover and the cover of a written blog", () => {
+    expect(withSubscribe(JSON.stringify({ isPodcast: true, coverUrl: "javascript:alert(1)" })).subscribe?.coverUrl).toBe("");
+    expect(withSubscribe(JSON.stringify({ isPodcast: false, coverUrl: "/media/cover.png" })).subscribe?.coverUrl).toBe("");
   });
 
   it("keeps the legacy feed URL without subscription JSON", () => {

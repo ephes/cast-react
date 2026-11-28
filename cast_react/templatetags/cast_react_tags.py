@@ -96,6 +96,16 @@ def recommended_podcast_format(blog):
     return next(audio_format for audio_format in PODCAST_FORMATS if counts[audio_format] == most)
 
 
+def cover_url(blog):
+    """The podcast artwork URL, or "" when the blog has none."""
+    artwork = getattr(blog, "itunes_artwork", None)
+    original = getattr(artwork, "original", None)
+    try:
+        return original.url if original else ""
+    except ValueError:
+        return ""
+
+
 @register.simple_tag(takes_context=True)
 def cast_react_subscribe(context):
     blog = context.get("blog")
@@ -158,6 +168,7 @@ def cast_react_subscribe(context):
         "isPodcast": is_podcast,
         "podcastRssUrl": safe_link(podcast_rss, request),
         "recommendedFormat": recommended_format,
+        "coverUrl": safe_link(cover_url(blog), request) if is_podcast else "",
         "blogRssUrl": blog_rss,
         "platformLinks": [
             {"id": key, "label": label, "icon": icon, "url": platform_urls[key]}

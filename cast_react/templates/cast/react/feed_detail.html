@@ -77,6 +77,18 @@
     {% endif %}
   {% endif %}
 
+  {% if cr_subscribe.followLinks %}
+    <section class="cr-feed-follow">
+      <h2>{% if is_podcast %}{% translate "Follow the show" %}{% else %}{% translate "Follow" %}{% endif %}</h2>
+      <p>{% if is_podcast %}{% translate "News, episode announcements and conversation with the hosts." %}{% else %}{% translate "News and conversation beyond the feed." %}{% endif %}</p>
+      <ul class="cr-follow__links">
+        {% for link in cr_subscribe.followLinks %}
+          <li><a href="{{ link.url }}"{% if link.rel %} rel="{{ link.rel }}"{% endif %}>{{ link.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
   <section class="cr-feed-card">
     <h2>{% translate "Blog feeds" %}</h2>
     <p>{% translate "A feed reader collects new posts from the sites you follow." %}</p>

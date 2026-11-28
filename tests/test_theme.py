@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 from cast import devdata
 from cast.models import Audio, Blog, ChapterMark, Episode
+from cast.models.itunes import ItunesArtWork
 from cast.models.theme import get_required_template_names, get_template_base_dir_choices
 from django import VERSION as DJANGO_VERSION
 from django.apps import apps
@@ -270,6 +271,17 @@ def test_subscribe_recommends_the_most_complete_feed(client, rf, podcast):
     html = rendered_page(client.get(reverse("cast:feed_detail", kwargs={"slug": blog.slug})))
     assert "MP3 (recommended)" in html
     assert "AAC audio in an M4A file." in html
+
+
+def test_subscribe_tag_reports_the_podcast_cover(rf, podcast):
+    blog, _, _ = podcast
+    assert cast_react_subscribe(Context({"blog": blog, "request": rf.get("/")}))["coverUrl"] == ""
+    blog.itunes_artwork = ItunesArtWork.objects.create(
+        original=SimpleUploadedFile("cover.png", devdata.create_image().file.read(), content_type="image/png")
+    )
+    blog.save()
+    data = cast_react_subscribe(Context({"blog": blog, "request": rf.get("/")}))
+    assert data["coverUrl"] == f"http://testserver{blog.itunes_artwork.original.url}"
 
 
 @pytest.mark.parametrize("path", ["/show?target=/id1234", "/show/notid1234", "/show/id1234-extra"])
@@ -547,6 +559,13 @@ def test_feed_detail_uses_the_page_layout(client, podcast, settings):
             assert f'value="http://testserver{feed}"' in html
     assert re.search(r'aria-label="MP3 RSS feed URL"\s+value="http://testserver[^"]+" data-feed-copy-url>', html)
 
+    follow = re.search(r'<section class="cr-feed-follow">(.*?)</section>', html, re.DOTALL)
+    assert follow is not None
+    assert "<h2>Follow the show</h2>" in follow[1]
+    assert '<a href="https://social.example/@show" rel="me">Mastodon</a>' in follow[1]
+    assert '<a href="https://www.linkedin.com/in/show/">LinkedIn</a>' in follow[1]
+    assert html.index("Use the feed in any other app") < html.index("cr-feed-follow") < html.index("Blog feeds")
+
     footer = re.search(r'<nav class="cr-footer__links"[^>]*>(.*?)</nav>', html, re.DOTALL)
     assert footer is not None
     assert f'<a href="http://testserver{url}">Subscribe</a>' in footer[1]
@@ -589,6 +608,8 @@ def test_written_blog_has_feeds_without_podcast_apps(client, db):
     assert "A feed reader collects new posts" in html
     assert "MP3" not in html
     assert "Listen in your podcast app" not in html
+    assert "<h2>Follow</h2>" in html  # written blogs get follow links too
+    assert "Follow the show" not in html
     assert html.count("data-copy-feed hidden") == 2
     assert re.search(r'aria-label="Blog RSS feed URL"\s+value="http://testserver[^"]+" data-feed-copy-url>', html)
     for name in ["latest_entries_feed", "latest_entries_atom_feed"]:

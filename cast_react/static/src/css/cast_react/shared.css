@@ -847,6 +847,44 @@ body:has(> .cr-footer) {
   border-radius: var(--cr-radius);
 }
 
+/* Follow links (Mastodon, LinkedIn, ...) on the show page and the subscribe page. */
+.cr-follow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.cr-follow__label {
+  color: var(--cr-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cr-follow__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cr-follow__links a {
+  display: inline-block;
+  padding-block: 0.25rem;
+  color: var(--cr-ink);
+  font-weight: 500;
+  text-decoration-color: var(--cr-line);
+  text-underline-offset: 0.2em;
+}
+
+.cr-follow__links a:hover {
+  color: var(--cr-accent);
+  text-decoration-color: currentColor;
+}
+
 .cr-subscribe__links,
 .cr-feed-actions {
   display: flex;
@@ -892,8 +930,25 @@ body:has(> .cr-footer) {
 }
 
 .cr-feed-platforms,
+.cr-feed-follow,
 .cr-feed-card {
   margin-top: 1.5rem;
+}
+
+.cr-feed-follow p {
+  color: var(--cr-muted);
+}
+
+.cr-feed-follow ul.cr-follow__links {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  font-family: var(--cr-sans);
+  font-size: 1rem;
+  list-style: none;
+}
+
+.cr-feed-follow .cr-follow__links li {
+  margin: 0;
 }
 
 .cr-feed-platforms .cr-subscribe-app {

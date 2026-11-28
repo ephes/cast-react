@@ -34,6 +34,7 @@ const subscription: Subscribe = {
   isPodcast: true,
   podcastRssUrl: "https://example.org/show/feed/podcast/mp3/rss.xml",
   blogRssUrl: "https://example.org/show/feed/rss.xml",
+  coverUrl: "",
   platformLinks: [
     { id: "apple_podcasts", label: "Apple Podcasts", icon: "podcast", url: "https://example.org/apple" },
     { id: "overcast", label: "Overcast", icon: "headphones", url: "https://example.org/overcast" },
@@ -282,6 +283,26 @@ it.each(["/show/", "/show/?category_facets=audio&page=2"])("offers apps below th
   const more = row.querySelector(".cr-subscribe__more");
   expect(more?.getAttribute("href")).toBe("/show/feed/");
   expect(more?.textContent).toBe("More options");
+});
+
+it("shows the cover beside the title and the follow links after the apps", async () => {
+  const view = await open("/show/", { subscribe: { ...subscription, coverUrl: "https://example.org/cover.png" } });
+  const show = view.querySelector(".cr-list__intro.cr-show")!;
+  expect(show.firstElementChild?.getAttribute("src")).toBe("https://example.org/cover.png");
+  expect(show.firstElementChild?.getAttribute("alt")).toBe("");
+  const follow = show.querySelector(".cr-subscribe + .cr-follow")!;
+  expect(follow.getAttribute("aria-label")).toBe("Follow");
+  expect(Array.from(follow.querySelectorAll("a"), (link) => [link.textContent, link.getAttribute("href")])).toEqual([
+    ["Mastodon", "https://social.example.org/@groundloop"],
+    ["E-mail", "mailto:hello@example.org"],
+  ]);
+  expect(follow.querySelector('a[rel="me"]')?.textContent).toBe("Mastodon");
+});
+
+it("leaves out the cover and follow line without them", async () => {
+  const view = await open("/show/", { subscribe: { ...subscription, followLinks: [] } });
+  expect(view.querySelector(".cr-show__cover")).toBeNull();
+  expect(view.querySelector(".cr-follow")).toBeNull();
 });
 
 it("labels the direct podcast feed RSS when the subscribe page is unavailable", async () => {
