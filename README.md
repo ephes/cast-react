@@ -23,7 +23,7 @@ What you get:
   and a lightbox for galleries.
 - Podcasts have a **Subscribe** link in the header and listening links on the
   post list and on episodes. The subscribe page has podcast apps, a copyable
-  MP3 RSS URL, alternative audio formats, and RSS and Atom feeds for written
+  RSS URL for the recommended format, alternative audio formats, and RSS and Atom feeds for written
   posts. Written blogs use **Feeds** and can show the same footer follow links.
 - An audio player made for this theme: the seek bar is divided into chapters,
   with a chapter list, a transcript you can search and that follows playback,
@@ -47,7 +47,7 @@ What you get:
 `cast-react` is not on PyPI yet. Install a tagged version from GitHub:
 
 ```shell
-pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.10"
+pip install "cast-react @ git+https://github.com/ephes/cast-react.git@v0.0.11"
 ```
 
 `cast-react` needs `django-cast` 0.2.62 or newer (it uses django-cast's player

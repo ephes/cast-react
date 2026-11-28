@@ -9,6 +9,7 @@ from cast.models import Audio, Blog, ChapterMark, Episode
 from cast.models.theme import get_required_template_names, get_template_base_dir_choices
 from django import VERSION as DJANGO_VERSION
 from django.apps import apps
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
 from django.template import Context, engines
 from django.template.loader import get_template, render_to_string
@@ -229,6 +230,46 @@ def test_subscribe_tag_uses_the_specific_podcast_and_derives_apps(rf, podcast):
         {"label": "Mastodon", "url": "https://social.example/@show", "rel": "me"},
         {"label": "E-mail", "url": "mailto:host@example.org", "rel": ""},
     ]
+
+
+def test_subscribe_recommends_m4a_when_episodes_have_m4a_audio(client, rf, podcast):
+    blog, _episode, audio = podcast
+    data = cast_react_subscribe(Context({"blog": blog, "request": rf.get("/")}))
+    assert data["recommendedFormat"] == "mp3"  # The fixture only has MP3 audio.
+
+    audio.m4a = SimpleUploadedFile("episode.m4a", b"m4a audio", content_type="audio/mp4")
+    audio.save(duration=False, cache_file_sizes=False)
+    data = cast_react_subscribe(Context({"blog": Blog.objects.get(pk=blog.pk), "request": rf.get("/")}))
+    assert data["recommendedFormat"] == "m4a"
+    rss = reverse("cast:podcast_feed_rss", kwargs={"slug": blog.slug, "audio_format": "m4a"})
+    assert data["podcastRssUrl"] == f"http://testserver{rss}"
+
+    assert client.get(rss).status_code == 200
+
+    html = rendered_page(client.get(reverse("cast:feed_detail", kwargs={"slug": blog.slug})))
+    assert "M4A (recommended)" in html
+    assert "MP3 (recommended)" not in html
+    assert re.search(r'aria-label="M4A RSS feed URL"\s+value="http://testserver[^"]+" data-feed-copy-url>', html)
+    assert "For older players and devices." in html
+
+
+def test_subscribe_recommends_the_most_complete_feed(client, rf, podcast):
+    blog, _episode, audio = podcast
+    audio.m4a = SimpleUploadedFile("episode.m4a", b"m4a audio", content_type="audio/mp4")
+    audio.save(duration=False, cache_file_sizes=False)
+    older = Audio(user=audio.user, title="Older audio", mp3=devdata.create_mp3_file(unique_name=True))
+    older.save(duration=False, cache_file_sizes=False)
+    devdata.create_episode(blog=blog, podcast_audio=older, num=2)
+
+    # M4A covers one of two episodes, so the complete MP3 feed stays recommended.
+    data = cast_react_subscribe(Context({"blog": blog, "request": rf.get("/")}))
+    assert data["recommendedFormat"] == "mp3"
+    rss = reverse("cast:podcast_feed_rss", kwargs={"slug": blog.slug, "audio_format": "mp3"})
+    assert data["podcastRssUrl"] == f"http://testserver{rss}"
+    assert client.get(rss).status_code == 200
+    html = rendered_page(client.get(reverse("cast:feed_detail", kwargs={"slug": blog.slug})))
+    assert "MP3 (recommended)" in html
+    assert "AAC audio in an M4A file." in html
 
 
 @pytest.mark.parametrize("path", ["/show?target=/id1234", "/show/notid1234", "/show/id1234-extra"])

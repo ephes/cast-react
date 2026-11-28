@@ -2,8 +2,10 @@ import re
 from urllib.parse import urlsplit
 
 from cast import appsettings
+from cast.models import Episode
 from django import template
 from django.conf import settings
+from django.db.models import Count, Q
 from django.http import HttpRequest
 from django.urls import NoReverseMatch, reverse
 from django.utils.encoding import escape_uri_path
@@ -16,7 +18,19 @@ except ModuleNotFoundError as exc:
         raise
     get_follow_links = None
 
+try:
+    from cast.blog_index import public_posts
+except ImportError:
+    # Older django-cast releases used Wagtail's public() queryset method.
+    def public_posts(queryset):
+        return queryset.public()
+
+
 register = template.Library()
+
+# Preference order for the recommended feed. M4A (AAC) sounds better than MP3
+# at the same size and plays in every common podcast app.
+PODCAST_FORMATS = ("m4a", "mp3", "oga", "opus")
 
 PLATFORMS = (
     ("apple_podcasts", "Apple Podcasts", "podcast"),
@@ -64,6 +78,24 @@ def feed_url(name, slug, **kwargs):
         return ""
 
 
+def recommended_podcast_format(blog):
+    """The format of the most complete podcast feed; ties go by PODCAST_FORMATS order.
+
+    Counts audio files in live, public episodes. An incomplete feed would miss
+    part of the back catalogue (and older django-cast releases fail to render it).
+    """
+    episodes = public_posts(Episode.objects.using(blog._state.db).live()).descendant_of(blog)
+    # Count skips NULL and the filter skips empty filenames.
+    counts = episodes.filter(podcast_audio__isnull=False).aggregate(
+        **{
+            audio_format: Count(f"podcast_audio__{audio_format}", filter=~Q(**{f"podcast_audio__{audio_format}": ""}))
+            for audio_format in PODCAST_FORMATS
+        }
+    )
+    most = max(counts.values())
+    return next(audio_format for audio_format in PODCAST_FORMATS if counts[audio_format] == most)
+
+
 @register.simple_tag(takes_context=True)
 def cast_react_subscribe(context):
     blog = context.get("blog")
@@ -85,6 +117,7 @@ def cast_react_subscribe(context):
             follow_links = getattr(appsettings, "CAST_FOLLOW_LINKS", {})
 
     feed_page = blog_rss = podcast_rss = ""
+    recommended_format = ""
     if feeds_available:
         feed_page = safe_link(follow_links.get("feed_detail"), None) or (feed_url("feed_detail", slug) if slug else "")
         blog_rss = (
@@ -93,7 +126,8 @@ def cast_react_subscribe(context):
             or (safe_link(feed_url("latest_entries_feed", slug), request) if slug else "")
         )
         if slug and is_podcast:
-            podcast_rss = feed_url("podcast_feed_rss", slug, audio_format="mp3")
+            recommended_format = recommended_podcast_format(blog)
+            podcast_rss = feed_url("podcast_feed_rss", slug, audio_format=recommended_format)
     if (
         feed_page.startswith("/")
         and request
@@ -123,6 +157,7 @@ def cast_react_subscribe(context):
         "legacyFeedUrl": feed_page or blog_rss,
         "isPodcast": is_podcast,
         "podcastRssUrl": safe_link(podcast_rss, request),
+        "recommendedFormat": recommended_format,
         "blogRssUrl": blog_rss,
         "platformLinks": [
             {"id": key, "label": label, "icon": icon, "url": platform_urls[key]}

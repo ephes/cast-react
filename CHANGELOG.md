@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.11
+
+- The subscribe page recommends the M4A (AAC) feed instead of MP3: AAC sounds
+  better at the same size and every common podcast app plays it. The page
+  recommends the format that the most live, public episodes have, so new
+  subscribers get the whole back catalogue; among equally complete formats it
+  prefers M4A, then MP3, OGA, Opus. A podcast with MP3 for every episode and
+  M4A for only some still recommends MP3. The podcast RSS URL in the app
+  configuration follows the same choice.
+
 ## 0.0.10
 
 - The header Appearance menu offers Light, Dark and System on React and
